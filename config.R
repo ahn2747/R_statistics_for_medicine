@@ -18,11 +18,12 @@ cfg <- list(
   drop_columns = c("rock2g_01"),           # 중복 열 (ROCK2Group과 동일)
 
   # Table 1 변수 (존재하는 열만 사용)
-  table1_vars = c("age", "age_g", "gender", "stage", "pathologic_stage_12_34",
-                  "pathologic_t", "pathologic_n", "pathologic_m", "cea_g",
-                  "histologic_diagnosis", "anatomic_neoplasm_subdivision",
-                  "residual_tumor", "lymphovascular_invasion_indicator",
-                  "vascular_invasion_indicator", "perineural_invasion",
+  table1_vars = c("age", "age_g", "gender", "pathologic_stage",
+                  "pathologic_t", "pathologic_n", "pathologic_m",
+                  "pathologic_stage_12_34", "cea_g",
+                  "lymphovascular_invasion_indicator", "vascular_invasion_indicator",
+                  "residual_tumor", "histologic_diagnosis",
+                  "anatomic_neoplasm_subdivision", "tumor_status",
                   "kras_gene_analysis_indicator", "braf_gene_analysis_indicator",
                   "mismatch_rep_proteins_tested_by_ihc"),
 

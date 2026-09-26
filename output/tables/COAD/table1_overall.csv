@@ -1,0 +1,80 @@
+﻿"Characteristic","N = 454"
+"Age, years","68.0 [58.0, 77.0]"
+"Missing","1"
+"Age group, years",
+"≤65","189 (41.7%)"
+"≥66","264 (58.3%)"
+"Missing","1"
+"Sex",
+"Male","240 (53.0%)"
+"Female","213 (47.0%)"
+"Missing","1"
+"Pathologic stage",
+"I","74 (16.7%)"
+"II","176 (39.6%)"
+"III","130 (29.3%)"
+"IV","64 (14.4%)"
+"Missing","10"
+"Pathologic T",
+"T1","12 (2.6%)"
+"T2","77 (17.0%)"
+"T3","309 (68.2%)"
+"T4","55 (12.1%)"
+"Missing","1"
+"Pathologic N",
+"N0","266 (58.7%)"
+"N1","106 (23.4%)"
+"N2","81 (17.9%)"
+"Missing","1"
+"Pathologic M",
+"M0","333 (83.9%)"
+"M1","64 (16.1%)"
+"Missing","57"
+"Pathologic stage group",
+"I–II","250 (56.3%)"
+"III–IV","194 (43.7%)"
+"Missing","10"
+"Pretreatment CEA",
+"≤5 ng/mL","186 (65.5%)"
+">5 ng/mL","98 (34.5%)"
+"Missing","170"
+"Lymphovascular invasion",
+"No","246 (60.1%)"
+"Yes","163 (39.9%)"
+"Missing","45"
+"Vascular invasion",
+"No","297 (75.8%)"
+"Yes","95 (24.2%)"
+"Missing","62"
+"Residual tumor",
+"R0","327 (85.8%)"
+"R1","4 (1.0%)"
+"R2","26 (6.8%)"
+"RX","24 (6.3%)"
+"Missing","73"
+"Histology",
+"Colon Adenocarcinoma","388 (86.6%)"
+"Colon Mucinous Adenocarcinoma","60 (13.4%)"
+"Missing","6"
+"Tumor site",
+"Ascending Colon","85 (19.5%)"
+"Cecum","106 (24.3%)"
+"Descending Colon","20 (4.6%)"
+"Hepatic Flexure","27 (6.2%)"
+"Rectosigmoid Junction","1 (0.2%)"
+"Sigmoid Colon","151 (34.6%)"
+"Splenic Flexure","7 (1.6%)"
+"Transverse Colon","40 (9.2%)"
+"Missing","17"
+"Tumor status",
+"Tumor free","198 (48.5%)"
+"With tumor","210 (51.5%)"
+"Missing","46"
+"KRAS testing performed",
+"No","368 (88.5%)"
+"Yes","48 (11.5%)"
+"Missing","38"
+"BRAF testing performed",
+"No","375 (93.1%)"
+"Yes","28 (6.9%)"
+"Missing","51"

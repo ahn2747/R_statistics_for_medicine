@@ -25,11 +25,12 @@ value_labels <- list(
 
 # Table/그림용 변수 라벨
 var_labels <- c(
-  age                                 = "Age (years)",
-  age_g                               = "Age group",
+  age                                 = "Age, years",
+  age_g                               = "Age group, years",
   gender                              = "Sex",
   stage                               = "Pathologic stage",
-  pathologic_stage_12_34              = "Pathologic stage (I–II vs III–IV)",
+  pathologic_stage                    = "Pathologic stage",
+  pathologic_stage_12_34              = "Pathologic stage group",
   pathologic_t                        = "Pathologic T",
   pathologic_n                        = "Pathologic N",
   pathologic_m                        = "Pathologic M",
@@ -40,6 +41,7 @@ var_labels <- c(
   lymphovascular_invasion_indicator   = "Lymphovascular invasion",
   vascular_invasion_indicator         = "Vascular invasion",
   perineural_invasion                 = "Perineural invasion",
+  tumor_status                        = "Tumor status",
   # 검사 "시행 여부" 변수 — 변이/MMR 결과가 아님
   kras_gene_analysis_indicator        = "KRAS testing performed",
   braf_gene_analysis_indicator        = "BRAF testing performed",
@@ -60,9 +62,10 @@ processed_path <- function(cancer, suffix) {
   file.path(cfg$processed_dir, paste0(cancer, "_", suffix))
 }
 
+# UTF-8 (BOM) CSV → Excel에서 ≤, – 등 기호가 깨지지 않음
 save_table <- function(df, cancer, name) {
   path <- file.path(out_dir(cancer, "tables"), name)
-  write.csv(df, path, row.names = FALSE, na = "")
+  readr::write_excel_csv(df, path, na = "")
   invisible(path)
 }
 
@@ -219,10 +222,16 @@ recode_clinical <- function(df) {
   df <- apply_value_labels(df)
   if ("pathologic_stage" %in% names(df)) df$stage <- df$pathologic_stage
 
-  # 검사 시행 여부 변수: YES/NO → Yes/No (결과 변수로 사용하지 않음)
-  for (v in intersect(c("kras_gene_analysis_indicator", "braf_gene_analysis_indicator",
-                        "mismatch_rep_proteins_tested_by_ihc"), names(df))) {
-    df[[v]] <- factor(str_to_title(df[[v]]), levels = c("No", "Yes"))
+  # YES/NO 열 → factor(No, Yes)
+  # (검사 시행 여부 변수도 여기 포함 — 결과 변수로 사용하지 않음)
+  for (v in names(df)) {
+    x <- df[[v]]
+    if (is.character(x) && any(!is.na(x)) && all(toupper(na.omit(x)) %in% c("YES", "NO"))) {
+      df[[v]] <- factor(str_to_title(x), levels = c("No", "Yes"))
+    }
+  }
+  if ("tumor_status" %in% names(df)) {
+    df$tumor_status <- factor(str_to_sentence(df$tumor_status), levels = c("Tumor free", "With tumor"))
   }
 
   neo <- df[["history_neoadjuvant_treatment"]]
