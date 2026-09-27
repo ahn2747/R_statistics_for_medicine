@@ -34,6 +34,19 @@ cfg <- list(
   median_tie_tolerance = 1,                # median-split 재현 QC 허용 오차 (명)
   group_colors         = c(Low = "#2E6FB7", High = "#C8442F"),   # 모든 그림 공통
 
+  # ---- 05 GSEA ----
+  gsea_genes             = NULL,           # NULL = primary_gene, "all" = 모든 유전자, 또는 c("MS4A1", "TIMP1")
+  gsea_design_covariates = c("tss"),       # DESeq2 design: ~ <공변량> + group (tss는 소수 기관 "Other"로 병합)
+  gsea_extra_collections = list(           # 기본(Hallmark, Reactome, KEGG, GO:BP) 외 추가 MSigDB 컬렉션
+    C8 = list(collection = "C8")           #   C8: 세포 유형 signature (면역/B세포)
+  ),
+  gsea_highlight = c("HALLMARK_INTERFERON_GAMMA_RESPONSE", "HALLMARK_ALLOGRAFT_REJECTION",
+                     "REACTOME_SIGNALING_BY_THE_B_CELL_RECEPTOR_BCR",
+                     "KEGG_B_CELL_RECEPTOR_SIGNALING_PATHWAY"),   # 항상 enrichment plot 그릴 경로
+  gsea_size    = c(15, 500),               # fgsea minSize, maxSize
+  n_cores      = 4,                        # DESeq2/fgsea 병렬 (Windows: SnowParam)
+  seed         = 2026,
+
   gdc_dir       = "D:/GDCdata",            # 02a 다운로드 폴더 (Windows 경로 길이 문제 회피)
   processed_dir = "data/processed",
   output_dir    = "output",

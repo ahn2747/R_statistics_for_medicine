@@ -18,8 +18,10 @@ R 4.6.1 is not on PATH. Use `"C:/Program Files/R/R-4.6.1/bin/Rscript.exe" <scrip
 02b_merge_genes.R       # database/gene_files/*.csv → data/processed/<C>_merged.{rds,csv,sav} + merge_QC
 03_table1.R             # table1_<GENE>.{docx,csv}, table1_overall, tss_by_group_<GENE>.csv
 04_survival.R           # KM, Cox, strata(tss), cox.zph, time-split Cox, RMST, BH q, forest plots
+05_gsea.R               # DESeq2 High vs Low (~ tss + group) + fgsea on MSigDB; needs 02a outputs and Bioconductor packages
 ```
-- Not written yet: `05_gsea.R` (DESeq2 + fgsea/msigdbr, using the MSigDB `.chip` file in `database/`) and `06_external_geo.R` (GSE39582). `07_timer` and `08_proteomics` are optional.
+- Not written yet: `06_external_geo.R` (GSE39582). `07_timer` and `08_proteomics` are optional.
+- 05 is slow: DESeq2 runs twice, plus apeglm and GO:BP fgsea. By default it runs only `cfg$primary_gene`; `cfg$gsea_genes = "all"` runs every gene. Run it in the background.
 - **There is no test suite.** Correctness comes from built-in stops:
   - `validate_schema()` and `check_label_consistency()` in 01
   - the manifest check in 01
@@ -38,6 +40,7 @@ R 4.6.1 is not on PATH. Use `"C:/Program Files/R/R-4.6.1/bin/Rscript.exe" <scrip
   - Table 1: `table1_vars`
   - survival: `cox_covariates`, `stage_collapsed`, `epv_min`, `min_events`, `tss_min_n`, `km_times`, `ph_split_months`, `rmst_tau`
   - figures: `group_colors`
+  - GSEA: `gsea_genes`, `gsea_design_covariates`, `gsea_extra_collections`, `gsea_highlight`, `gsea_size`, `n_cores`, `seed`
 - **`R/utils.R`** holds all shared logic. Every script starts with `source("config.R"); source("R/utils.R")`, loops over `cfg$cancers`, and finds genes with `detect_genes()` (stems that have both `_expression` and `_group` columns). Don't hardcode cancer codes, genes or patient IDs.
 - **Schema → canonical columns:** source column names live only in the schema. `apply_schema_names()` renames the schema columns to the canonical names in `canon`:
 
@@ -76,8 +79,10 @@ R 4.6.1 is not on PATH. Use `"C:/Program Files/R/R-4.6.1/bin/Rscript.exe" <scrip
   - Only Expression and Group are merged. Status is used only for QC.
   - A gene that already exists in the .sav is QC-only.
 - **Output helpers:**
+  - All of these take an optional `subdir` (e.g. `"gsea/MS4A1"`) under `output/<type>/<C>/`.
   - `save_table()` (CSV, UTF-8 BOM) and `save_df_table()` (.docx + .csv)
   - `save_fig()` (cairo PDF + 300-dpi LZW TIFF)
+  - `move_stale_dirs()`: gene subfolders under `gsea/` that aren't in the current run are moved to `gsea/_stale/`.
   - `fmt_hr()` and `fmt_p()` (2 decimals; `<0.001`)
   - `move_stale_outputs()`: gene-specific files that this run didn't recreate are moved to `output/*/<C>/_stale/`, never deleted. It uses the prefixes each script owns:
     - 03: `table1_`, `tss_by_group_`
@@ -87,6 +92,16 @@ R 4.6.1 is not on PATH. Use `"C:/Program Files/R/R-4.6.1/bin/Rscript.exe" <scrip
   - `survival_summary_raw.csv`
   - `km_summary`, `cox_uni`, `cox_multi_<GENE>`, `ph_tests.csv`
   - Figures: `km_`, `forest_multi_`, `forest_genes`, and `zph_<GENE>.pdf` (only when PH is violated).
+- **05 inputs:**
+  - `data/processed/<C>_counts.rds`: raw STAR unstranded counts from 02a (symbol × 12-character patient ID, tumor samples only, first aliquot)
+  - `<C>_merged.rds`
+  - `database/TCGA_<C>_RNAseq_Expression.csv` (log2 TPM+1, used for QC only)
+  - the MSigDB `.chip` file
+- **05 outputs:**
+  - `output/tables/<C>/gsea/<GENE>/`: `de_results.csv`, `gsea_<Hallmark|Reactome|KEGG|GOBP|C8>.csv`, `gsea_QC.csv`, `gsea_summary.{docx,csv}`
+  - `output/figures/<C>/gsea/<GENE>/`: `volcano`, `pca`, `nes_<collection>`, `enrichment_<PATHWAY>`
+  - `data/processed/<C>_dds_<GENE>.rds`
+- **msigdbr 26.x** uses `collection` / `subcollection` (not `category`), and its data download on first use. KEGG uses `CP:KEGG_LEGACY`, falling back to `CP:KEGG_MEDICUS`.
 
 ## Data rules agreed with the user (don't change silently)
 - **Survival** comes from the schema's time and status (currently `Days`/`Status`, 1 = death). `os_months = days / 30.44`. Reference counts, now stored in the manifest:
@@ -114,6 +129,15 @@ R 4.6.1 is not on PATH. Use `"C:/Program Files/R/R-4.6.1/bin/Rscript.exe" <scrip
 - **Reference results** (checked against independent code):
   - COAD MS4A1: log-rank p 0.018; multivariable HR 0.55 (0.35–0.85), p 0.007; strata(TSS) HR 0.50; RMST difference 4.88 months
   - READ MS4A1: log-rank p 0.008; RMST difference 9.11 months
+- **GSEA (05):**
+  - Use the existing `<gene>_group` from the merged data (the same patients and grouping as survival). Never re-split.
+  - Main design: `~ tss + group`, with sites under `tss_min_n` patients grouped as "Other" (groups are unbalanced across sites). Contrast: High vs Low.
+  - Pre-filter: keep genes with count ≥ 10 in at least as many samples as the smaller group.
+  - Rank by the DESeq2 Wald stat, remap symbols with the `.chip` file, and average duplicates.
+  - `fgseaMultilevel` with minSize 15, maxSize 500, eps 0 and a fixed seed.
+  - GO:BP runs `collapsePathways` on the top 300 significant pathways.
+  - `robust_no_covariate` = same NES sign and padj < 0.05 in the `~ group` run.
+  - QC: Spearman correlation between GDC log2 TPM and the .sav expression (warns if r < 0.8). The gene itself must rank in the top 1% up in High, otherwise a warning is printed.
 - **Table 1:** Wilcoxon for continuous variables; chi-square, switching to Fisher's exact when any expected cell is < 5. Missing values are shown as a row and excluded from the tests.
 
 ## Adding a new cancer / an updated .sav
