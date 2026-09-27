@@ -4,7 +4,7 @@
 An R pipeline for a medical paper using TCGA data, currently colorectal cancer (COAD and READ).
 - **COAD and READ are always analyzed separately. Never pool them.**
 - The code is config-driven so more TCGA cancers can be added later with no code changes.
-- The primary hypothesis gene is `cfg$primary_gene` (MS4A1). All other genes are exploratory.
+- The primary hypothesis gene is `cfg$primary_gene`; all other genes are exploratory. Several genes are analyzed, so never assume a specific gene or its results.
 
 ## Commands
 R 4.6.1 is not on PATH. Use `"C:/Program Files/R/R-4.6.1/bin/Rscript.exe" <script>` and run from the project root, because scripts use relative paths. Run in this order:
@@ -57,28 +57,15 @@ R 4.6.1 is not on PATH. Use `"C:/Program Files/R/R-4.6.1/bin/Rscript.exe" <scrip
   | all patients | 439 (97) | 157 (25) |
   | neoadjuvant excluded (default) | 436 (96) | 156 (25) |
 
-## Reference results (regression checks; checked against independent code)
-- COAD MS4A1: log-rank p 0.018; multivariable HR 0.55 (0.35–0.85), p 0.007; strata(TSS) HR 0.50; RMST difference 4.88 months
-- READ MS4A1: log-rank p 0.008; RMST difference 9.11 months
-- 05 GSEA (full run, each cancer in its own process, no failures or warnings):
-  - MS4A1 ranks 1st of all tested genes in both cancers (COAD 17,748, log2FC 4.09; READ 18,089, log2FC 3.64).
-  - Significant pathways (padj < 0.05), with the number still significant in the no-covariate run in brackets:
-
-    | | Hallmark | Reactome | KEGG | GO:BP | C8 |
-    |---|---|---|---|---|---|
-    | COAD | 30 (29) | 412 (373) | 72 (65) | 1288 (1243) | 483 (471) |
-    | READ | 28 (27) | 336 (315) | 54 (49) | 790 (742) | 384 (354) |
-
-  - Up in High: allograft rejection, IFN-γ response, inflammatory response.
-  - Up in Low: MYC targets, oxidative phosphorylation, E2F, G2M.
-  - The PCA group panel is coloured correctly (COAD 218/218, READ 79/78).
-- 06 GEO, GSE39582 (colon only, so it validates COAD; READ has no external cohort yet):
-  - 585 samples → 566 tumors (19 "Non Tumoral" excluded). Stage 0 (4 tumors) → NA. RFS excludes stage IV (half of them have `rfs.delay` = 0).
-  - MS4A1 has 4 GPL570 probes (r 0.78–0.95). `max_mean` picks `228592_at` (mean 4.29, IQR 1.57); median split 283/283.
-  - OS n 562 (191 events); RFS n 497 (140 events); MMR known for 519 (dMMR 75).
-  - **Does not replicate TCGA.** OS: univariable HR 1.04 (0.78–1.38), p 0.80; multivariable 1.14 (0.85–1.52), p 0.38; + MMR 1.22 (0.90–1.66), p 0.19; pMMR multivariable 1.27 (0.92–1.74). RFS: multivariable 1.11 (0.80–1.55). No probe (or the probe mean) gives HR < 1.
-  - PH is violated for the gene term (OS univariable zph p 0.005). Time-split OS: 0–24 mo HR 2.50 (1.54–4.07), >24 mo HR 0.68 (0.46–0.99). OS RMST (60 mo) High − Low −2.58 (−5.57, 0.41).
-  - Group × MMR interaction: OS p 0.36, RFS p 0.20.
+## Regression checks (gene-independent)
+Gene-level results (HR, p, RMST, GSEA counts, GEO HRs) are not fixed here: genes and covariates change between runs. Check regressions against the committed outputs instead.
+- **Refactors with no intended change in results:** rerun the affected scripts and check that `git status` / `git diff --stat output/tables/` shows no changed CSVs. Any change means the refactor altered results.
+- **Intended changes** (covariates, genes, settings): commit the new outputs with the config change, so they become the next baseline.
+- **Cohort-level invariants** (do not depend on the gene):
+  - TCGA survival counts: the table above, enforced by the manifest check in 01.
+  - Each gene's High/Low sizes: `merge_QC` in 02b and the median QC (±1 patient).
+  - 05: the PCA group panel colours must match each gene's High/Low n; every cancer runs in its own process with no failures or warnings.
+  - 06 GSE39582 (colon only, so it validates COAD; READ has no external cohort yet): 585 samples → 566 tumors (19 "Non Tumoral" excluded). Stage 0 (4 tumors) → NA. RFS excludes stage IV (half of them have `rfs.delay` = 0). OS n 562 (191 events); RFS n 497 (140 events); MMR known for 519 (dMMR 75).
 
 ## Conventions
 - Code comments and console messages are in Korean. Table and figure labels are in English.
