@@ -11,7 +11,7 @@ cfg <- list(
   gene_dir     = "database/gene_files",    # <CANCER>_<split>_<GENE>.csv 위치
   gene_pattern = "^([A-Za-z]+)_(\\d+_\\d+)_(.+)\\.csv$",   # 암종, split, 유전자
   genes_from_gdc = c(),                    # 02a 발현 행렬에서 추가로 가져올 유전자 (예: c("CD8A"))
-  primary_gene = "MS4A1",                  # 주 가설 유전자: BH 보정에서 제외, raw p 보고
+  primary_gene = "ROCK2",                  # 주 가설 유전자: BH 보정에서 제외, raw p 보고
 
   drop_columns = c("rock2g_01"),           # 중복 열 (ROCK2Group과 동일)
 
