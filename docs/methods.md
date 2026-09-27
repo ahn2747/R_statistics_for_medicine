@@ -36,3 +36,19 @@ Rules agreed with the user; don't change silently. Setting names are in docs/cov
   - the top C8 cell-type sets matching `gsea_c8_pattern` (default B cells / plasma cells, significant only)
 - `gsea_summary` lists the Hallmark top 5 up and top 5 down by NES, and the top 10 by padj for the other collections.
 - apeglm optimizer warnings are suppressed, and the number suppressed is printed.
+
+## External validation in GEO (06)
+- Validates only `cfg$primary_gene`, in each `cfg$geo_datasets` entry. GSE39582 (Marisa et al. 2013; CIT; Affymetrix HG-U133 Plus 2.0, RMA + ComBat as deposited) is colon cancer only, so it validates COAD.
+- **Expression:** the series matrix as deposited. If max > 100 it is log2-transformed, otherwise used as is (GSE39582 is already log2). Every probe annotated to the gene in the GPL `Gene Symbol` column (splitting on `///`) is reported. One probe is chosen by `geo_probe_rule` (default highest mean over tumors), with no hardcoded probe IDs.
+- **Samples:** non-tumor samples are excluded first. High/Low = above/at or below the median of the chosen probe over **all tumors** (`median_split()`), before any endpoint-specific exclusion.
+- **Endpoints:** OS is primary and RFS secondary. RFS excludes stage IV, which has no disease-free interval. Patients with only one of time/event are excluded from that endpoint and listed by ID.
+- **Models (per endpoint, all tumors):**
+  - univariable (group)
+  - univariable continuous (per 1 log2 unit)
+  - multivariable with `cox_covariates`, using the same EPV rule as 04 (`build_multi()`)
+  - the same multivariable model restricted to patients with known extra covariate
+  - multivariable + `extra_covariate` (MMR status), with the group × MMR likelihood-ratio interaction test
+  - Comparing the last two on the same patients isolates the effect of MMR adjustment. This answers the MSI/immune-confounding question that TCGA can't address yet (no MSI result).
+- **Subgroup:** KM, univariable and multivariable models are repeated in pMMR.
+- **PH, time-split and RMST:** these follow the 04 rules. cox.zph runs for every model. The time-split Cox (0–24 / >24 months) runs on the multivariable model only when the gene term violates PH. RMST (High − Low, tau 60) is always reported. Time-0 patients are kept (the survSplit origin is shifted below 0).
+- **Direction check:** each GEO HR is compared with the sign of the TCGA multivariable HR from `output/tables/<validates>/survival_summary_raw.csv`.

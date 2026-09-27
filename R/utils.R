@@ -90,6 +90,13 @@ var_labels <- c(
   perineural_invasion                 = "Perineural invasion",
   tumor_status                        = "Tumor status",
   tss                                 = "Tissue source site",
+  # 06 GEO 필드 (결과 변수: GEO 데이터셋이 실제 판정 결과를 제공)
+  mmr_status                          = "MMR status",
+  kras_mutation                       = "KRAS mutation",
+  braf_mutation                       = "BRAF mutation",
+  tumor_location                      = "Tumor location",
+  adjuvant_chemo                      = "Adjuvant chemotherapy",
+  cit_subtype                         = "CIT molecular subtype",
   # 검사 "시행 여부" 변수 — 변이/MMR 결과가 아님
   kras_gene_analysis_indicator        = "KRAS testing performed",
   braf_gene_analysis_indicator        = "BRAF testing performed",

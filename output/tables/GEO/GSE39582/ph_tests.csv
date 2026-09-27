@@ -1,0 +1,59 @@
+﻿"endpoint","population","gene","model","term","chisq","df","p","flag"
+"OS","All","MS4A1","Univariable","group",8.004,1,0.004669,TRUE
+"OS","All","MS4A1","Univariable","GLOBAL",8.004,1,0.004669,TRUE
+"OS","All","MS4A1","Univariable, continuous (per 1 log2 unit)","expr_log2",5.708,1,0.01688,TRUE
+"OS","All","MS4A1","Univariable, continuous (per 1 log2 unit)","GLOBAL",5.708,1,0.01688,TRUE
+"OS","All","MS4A1","Multivariable","group",8.531,1,0.003491,TRUE
+"OS","All","MS4A1","Multivariable","age_per10",1.37,1,0.2418,FALSE
+"OS","All","MS4A1","Multivariable","gender",0.284,1,0.5942,FALSE
+"OS","All","MS4A1","Multivariable","stage",3.3,3,0.3477,FALSE
+"OS","All","MS4A1","Multivariable","GLOBAL",13.166,6,0.04048,TRUE
+"OS","All","MS4A1","Multivariable (MMR status known)","group",8.389,1,0.003776,TRUE
+"OS","All","MS4A1","Multivariable (MMR status known)","age_per10",1.012,1,0.3143,FALSE
+"OS","All","MS4A1","Multivariable (MMR status known)","gender",0.457,1,0.499,FALSE
+"OS","All","MS4A1","Multivariable (MMR status known)","stage",2.477,3,0.4795,FALSE
+"OS","All","MS4A1","Multivariable (MMR status known)","GLOBAL",12.166,6,0.05836,FALSE
+"OS","All","MS4A1","Multivariable + MMR status","group",8.393,1,0.003767,TRUE
+"OS","All","MS4A1","Multivariable + MMR status","age_per10",1.035,1,0.3091,FALSE
+"OS","All","MS4A1","Multivariable + MMR status","gender",0.44,1,0.5071,FALSE
+"OS","All","MS4A1","Multivariable + MMR status","stage",2.468,3,0.4811,FALSE
+"OS","All","MS4A1","Multivariable + MMR status","mmr_status",1.221,1,0.2692,FALSE
+"OS","All","MS4A1","Multivariable + MMR status","GLOBAL",13.534,7,0.06013,FALSE
+"OS","pMMR","MS4A1","Univariable","group",5.667,1,0.01728,TRUE
+"OS","pMMR","MS4A1","Univariable","GLOBAL",5.667,1,0.01728,TRUE
+"OS","pMMR","MS4A1","Univariable, continuous (per 1 log2 unit)","expr_log2",4.208,1,0.04023,TRUE
+"OS","pMMR","MS4A1","Univariable, continuous (per 1 log2 unit)","GLOBAL",4.208,1,0.04023,TRUE
+"OS","pMMR","MS4A1","Multivariable","group",5.497,1,0.01905,TRUE
+"OS","pMMR","MS4A1","Multivariable","age_per10",1.17,1,0.2794,FALSE
+"OS","pMMR","MS4A1","Multivariable","gender",1.139,1,0.2859,FALSE
+"OS","pMMR","MS4A1","Multivariable","stage",3.266,3,0.3523,FALSE
+"OS","pMMR","MS4A1","Multivariable","GLOBAL",10.2,6,0.1165,FALSE
+"RFS","All","MS4A1","Univariable","group",4.482,1,0.03426,TRUE
+"RFS","All","MS4A1","Univariable","GLOBAL",4.482,1,0.03426,TRUE
+"RFS","All","MS4A1","Univariable, continuous (per 1 log2 unit)","expr_log2",1.093,1,0.2959,FALSE
+"RFS","All","MS4A1","Univariable, continuous (per 1 log2 unit)","GLOBAL",1.093,1,0.2959,FALSE
+"RFS","All","MS4A1","Multivariable","group",5.038,1,0.0248,TRUE
+"RFS","All","MS4A1","Multivariable","age_per10",0.011,1,0.9157,FALSE
+"RFS","All","MS4A1","Multivariable","gender",5.53,1,0.0187,TRUE
+"RFS","All","MS4A1","Multivariable","stage",0.021,2,0.9893,FALSE
+"RFS","All","MS4A1","Multivariable","GLOBAL",10.95,5,0.05238,FALSE
+"RFS","All","MS4A1","Multivariable (MMR status known)","group",4.316,1,0.03775,TRUE
+"RFS","All","MS4A1","Multivariable (MMR status known)","age_per10",0.086,1,0.7695,FALSE
+"RFS","All","MS4A1","Multivariable (MMR status known)","gender",4.488,1,0.03413,TRUE
+"RFS","All","MS4A1","Multivariable (MMR status known)","stage",0.018,2,0.9911,FALSE
+"RFS","All","MS4A1","Multivariable (MMR status known)","GLOBAL",9.157,5,0.103,FALSE
+"RFS","All","MS4A1","Multivariable + MMR status","group",4.242,1,0.03943,TRUE
+"RFS","All","MS4A1","Multivariable + MMR status","age_per10",0.076,1,0.7828,FALSE
+"RFS","All","MS4A1","Multivariable + MMR status","gender",4.31,1,0.03789,TRUE
+"RFS","All","MS4A1","Multivariable + MMR status","stage",0.038,2,0.9812,FALSE
+"RFS","All","MS4A1","Multivariable + MMR status","mmr_status",2.233,1,0.1351,FALSE
+"RFS","All","MS4A1","Multivariable + MMR status","GLOBAL",10.18,6,0.1173,FALSE
+"RFS","pMMR","MS4A1","Univariable","group",3.257,1,0.07113,FALSE
+"RFS","pMMR","MS4A1","Univariable","GLOBAL",3.257,1,0.07113,FALSE
+"RFS","pMMR","MS4A1","Univariable, continuous (per 1 log2 unit)","expr_log2",0.594,1,0.4407,FALSE
+"RFS","pMMR","MS4A1","Univariable, continuous (per 1 log2 unit)","GLOBAL",0.594,1,0.4407,FALSE
+"RFS","pMMR","MS4A1","Multivariable","group",3.682,1,0.055,FALSE
+"RFS","pMMR","MS4A1","Multivariable","age_per10",0,1,0.9872,FALSE
+"RFS","pMMR","MS4A1","Multivariable","gender",4.917,1,0.02659,TRUE
+"RFS","pMMR","MS4A1","Multivariable","stage",0.007,2,0.9963,FALSE
+"RFS","pMMR","MS4A1","Multivariable","GLOBAL",8.738,5,0.12,FALSE

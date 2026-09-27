@@ -119,3 +119,50 @@ cfg$label_rules_default <- list(
 )
 cfg$value_labels <- list(COAD = list(), READ = list())
 cfg$label_rules  <- list(COAD = list(), READ = list())
+
+# ---- 06 외부 검증 (GEO) ------------------------------------------------------
+# 데이터셋 추가: cfg$geo_datasets에 항목 하나 추가 (코드 수정 없음)
+#   fields: 표준 이름 → characteristics_ch1의 원본 key ("key: value"의 key)
+#           06이 모든 원본 key를 먼저 출력하므로 그것을 보고 지정
+#   필수 fields: sample_type, age, gender, stage + endpoints에 쓰는 time/event
+cfg$geo_dir        <- "data/geo"               # GEOquery 다운로드 캐시 (git-ignore: data/)
+cfg$geo_probe_rule <- "max_mean"               # 유전자 probe 여러 개일 때: "max_mean", "max_iqr", "max_sd"
+cfg$geo_na_values  <- c("", "N/A", "NA", "ND", "na", "n/a", "NaN")   # 결측 표기
+
+cfg$geo_datasets <- list(
+  GSE39582 = list(
+    platform   = "GPL570",                     # 여러 플랫폼 GSE에서 series matrix 선택 + 확인
+    symbol_col = "Gene Symbol",                # GPL 주석의 유전자 기호 열 ("A /// B" 다중 매핑 허용)
+    validates  = "COAD",                       # 비교할 TCGA 코호트 (output/tables/<C>/survival_summary_raw.csv)
+    label      = "GSE39582 (CIT, colon)",      # 그림/표 제목
+    fields = c(
+      sample_type    = "dataset",              # discovery / validation / Non Tumoral
+      os_time        = "os.delay (months)",
+      os_event       = "os.event",
+      rfs_time       = "rfs.delay",
+      rfs_event      = "rfs.event",
+      stage          = "tnm.stage",            # 0–4 (숫자 코드)
+      age            = "age.at.diagnosis (year)",
+      gender         = "Sex",
+      mmr_status     = "mmr.status",           # dMMR / pMMR
+      kras_mutation  = "kras.mutation",
+      braf_mutation  = "braf.mutation",
+      tumor_location = "tumor.location",
+      adjuvant_chemo = "chemotherapy.adjuvant",
+      cit_subtype    = "cit.molecularsubtype"
+    ),
+    exclude_sample_type = c("Non Tumoral"),    # 비종양 샘플 제외 (median split 전에)
+    stage_na_values     = c("0"),              # stage 0 (4명): 모형 stage 수준에서 제외 → NA (KM/단변량에는 포함)
+    # 종점: 첫 번째 = 주 종점. exclude_stage = 종점이 정의되지 않는 stage (해당 환자 제외)
+    endpoints = list(
+      OS  = list(time = "os_time",  event = "os_event",  time_unit = "months", event_value = 1,
+                 label = "Overall survival"),
+      RFS = list(time = "rfs_time", event = "rfs_event", time_unit = "months", event_value = 1,
+                 label = "Relapse-free survival",
+                 exclude_stage = 4)            # stage IV: 절반이 rfs.delay = 0 (무병 상태 없음) → I–III만
+    ),
+    factor_levels = list(mmr_status = c("pMMR", "dMMR")),   # 첫 번째 = 기준 수준
+    extra_covariate = "mmr_status",            # 다변량 + 이 변수 (TCGA에 MSI 결과가 없어서 교란 확인용)
+    subgroup = list(var = "mmr_status", level = "pMMR")     # 이 하위군에서 KM/Cox 반복
+  )
+)
