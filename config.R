@@ -37,9 +37,9 @@ cfg <- list(
                               pathologic_stage_12_34 = "I\u2013II"),
 
   # Cox 모형 (04)
-  cox_covariates       = c("age_g", "gender", "pathologic_stage_12_34", "cea_g"),            # 다변량 보정 변수
-  cox_uni_covariates   = c("age_g", "gender", "pathologic_stage_12_34", "cea_g"),  # 단변량 표
-  covariate_scale      = list(age = list(by = 10, label = "Age (per 10 years)")),  # 연속형 단위
+  cox_covariates       = c("age", "gender", "pathologic_stage_12_34", "cea_g"),            # 다변량 보정 변수
+  cox_uni_covariates   = c("age", "gender", "pathologic_stage_12_34", "cea_g"),  # 단변량 표
+  covariate_scale      = list(age = list(by = 1, label = "Age (per 10 years)")),  # 연속형 단위
   stage_full           = "stage",                                 # EPV 부족 시 교체될 stage 변수
   stage_collapsed      = "pathologic_stage_12_34",                # 교체 변수 (없으면 stage로 생성)
   epv_min              = 10,               # 다변량 Cox EPV 기준 (미만 → stage 병합, 그래도 미만 → 탐색적)
@@ -174,7 +174,7 @@ cfg$geo_datasets <- list(
                  label = "Overall survival"),
       RFS = list(time = "rfs_time", event = "rfs_event", time_unit = "months", event_value = 1,
                  label = "Relapse-free survival",
-                 exclude_stage = 4)            # stage IV: 절반이 rfs.delay = 0 (무병 상태 없음) → I–III만
+                 exclude_stage = NaN)            # stage IV: 절반이 rfs.delay = 0 (무병 상태 없음) → I–III만
     ),
     factor_levels = list(mmr_status = c("pMMR", "dMMR")),   # 첫 번째 = 기준 수준
     extra_covariate = "mmr_status",            # 다변량 + 이 변수 (TCGA에 MSI 결과가 없어서 교란 확인용)
