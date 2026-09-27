@@ -1,5 +1,5 @@
 ﻿"TSS","Low","High","Total","High, %","p-value","Test"
-"AA",106,49,155,"31.6","<0.001","Fisher's exact test (Monte Carlo, B = 100,000)"
+"AA",108,50,158,"31.6","<0.001","Fisher's exact test (Monte Carlo, B = 100,000)"
 "A6",24,27,51,"52.9","",""
 "CM",15,22,37,"59.5","",""
 "D5",9,22,31,"71.0","",""

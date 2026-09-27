@@ -26,7 +26,7 @@ cfg <- list(
 
   # ---- 공변량 / 층화 / 보정 / 제외 ---------------------------------------
   # 제외
-  exclude_neoadjuvant  = TRUE,             # 신보조요법 환자 제외 (값은 schema$neoadjuvant_yes)
+  exclude_neoadjuvant  = FALSE,             # 신보조요법 환자 제외 (값은 schema$neoadjuvant_yes)
 
   # 노출(발현 그룹): 첫 번째 = 기준(reference), 두 번째 = 비교 (median 초과)
   group_levels         = c("Low", "High"),

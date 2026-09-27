@@ -69,12 +69,13 @@ make_summary <- function(d, vars, by = NULL) {
 
 save_tbl <- function(tbl, cancer, stem) {
   dir <- out_dir(cancer, "tables")
-  ft <- as_flex_table(tbl) |>
-    font(fontname = "Times New Roman", part = "all") |>
-    fontsize(size = 9, part = "all") |>
-    autofit()
+  # flextable 함수는 네임스페이스로 호출 (ggpubr::font 등이 flextable::font를 가림)
+  ft <- gtsummary::as_flex_table(tbl) |>
+    flextable::font(fontname = "Times New Roman", part = "all") |>
+    flextable::fontsize(size = 9, part = "all") |>
+    flextable::autofit()
   docx <- file.path(dir, paste0(stem, ".docx"))
-  save_as_docx(ft, path = docx)
+  flextable::save_as_docx(ft, path = docx)
 
   # CSV: 마크다운(**, __) 및 헤더 줄바꿈 제거, 검정명 열 추가
   csv_df <- as_tibble(tbl, col_labels = TRUE)
