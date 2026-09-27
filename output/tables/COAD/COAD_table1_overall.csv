@@ -47,11 +47,10 @@
 "Yes","95 (24.1%)"
 "Missing","62"
 "Residual tumor",
-"R0","329 (85.9%)"
-"R1","4 (1.0%)"
-"R2","26 (6.8%)"
-"RX","24 (6.3%)"
-"Missing","74"
+"R0","329 (91.6%)"
+"R1","4 (1.1%)"
+"R2","26 (7.2%)"
+"Missing","98"
 "Histology",
 "Colon Adenocarcinoma","389 (86.3%)"
 "Colon Mucinous Adenocarcinoma","62 (13.7%)"

@@ -551,6 +551,16 @@ check_label_consistency <- function(df, cancer) {
 
 # 분석용 변수 생성 (없는 열은 건너뜀 → 다른 암종에도 사용 가능)
 recode_clinical <- function(df, cancer) {
+  # 평가 불가 등 분석에서 제외할 값 → NA (cfg$analysis_na_values)
+  for (v in intersect(names(cfg$analysis_na_values), names(df))) {
+    hit <- !is.na(df[[v]]) & as.character(df[[v]]) %in% cfg$analysis_na_values[[v]]
+    if (any(hit)) {
+      cat(sprintf("  %s: %s → NA %d명\n", v,
+                  paste(cfg$analysis_na_values[[v]], collapse = "/"), sum(hit)))
+      df[[v]][hit] <- NA
+    }
+  }
+
   if ("gender" %in% names(df)) {
     df$gender <- factor(str_to_title(df$gender))   # 기준 수준: cfg$reference_levels
   }

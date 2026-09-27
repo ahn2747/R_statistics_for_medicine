@@ -5,6 +5,7 @@ Every setting below lives in `config.R` (the no-hardcoding / audit-grep rule is 
 | Key | Default | Used in | Controls |
 |---|---|---|---|
 | `exclude_neoadjuvant` | `TRUE` | 01, 02b (→ 03–05) | Drop neoadjuvant-treated patients (applied at the end of 02b; see CLAUDE.md) |
+| `analysis_na_values` | `residual_tumor = "RX"` | utils `recode_clinical` (01) → 02b–05 | Values treated as missing in every analysis (RX = residual tumor cannot be assessed); they appear in Table 1's Unknown row and are excluded from tests |
 | `schema$neoadjuvant`, `schema$neoadjuvant_yes` | `"history_neoadjuvant_treatment"`, `"Yes"` | utils `recode_clinical` (01) | Which column and which value (case-insensitive) set `neoadjuvant_flag` |
 | `group_levels` | `c("Low", "High")` | utils, 01–05 | Exposure levels: the 1st is the **reference**, the 2nd is the comparison (above median). Sets the 0/1 mapping (1 = 2nd level), factor order, Cox/KM reference, RMST and time-split arm, DESeq2 contrast and apeglm coefficient, and plot labels. |
 | `reference_levels` | `gender = "Male"`, `pathologic_stage = "I"`, `stage = "I"`, `pathologic_stage_12_34 = "I–II"` | utils `apply_reference_levels` (01) → 03, 04 | Reference level of each categorical covariate |

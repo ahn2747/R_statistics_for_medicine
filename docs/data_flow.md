@@ -22,6 +22,7 @@
   - converts stage to 1–4 (`stage_format` "numeric" or "ajcc_text")
   - computes `os_months` from `time_unit`
 - `recode_clinical()`:
+  - sets the values in `cfg$analysis_na_values` to NA (e.g. residual tumor `RX`)
   - creates `pathologic_stage_12_34` if it's missing
   - runs `check_label_consistency()`
   - applies `labels_for(cancer)`

@@ -47,11 +47,10 @@
 "Yes","38 (26.0%)"
 "Missing","24"
 "Residual tumor",
-"R0","127 (87.6%)"
+"R0","127 (90.7%)"
 "R1","2 (1.4%)"
-"R2","11 (7.6%)"
-"RX","5 (3.4%)"
-"Missing","25"
+"R2","11 (7.9%)"
+"Missing","30"
 "Histology",
 "Rectal Adenocarcinoma","150 (92.0%)"
 "Rectal Mucinous Adenocarcinoma","13 (8.0%)"
