@@ -15,6 +15,21 @@
   - 06 (under `GEO/<GSE>/`): `km_`, `forest`, `cox_`, `zph_`
 - `move_stale_dirs()`: gene subfolders under `gsea/` that aren't in the current run are moved to `gsea/_stale/`.
 
+## 02a outputs (`data/processed/`, not under `output/`, no prefix rule)
+- `<C>_counts.rds`, `<C>_se.rda` and `database/TCGA_<C>_RNAseq_Expression.csv` (the existing data files; see docs/data_flow.md)
+- `<C>_gdc_provenance.json`: GDC provenance for the Methods.
+  - `gdc_data_release`: the release at download (`release` and `release_source`), `metadata_se` and the release current when the JSON was made. A `release_source` of `queried_at_<date>, not at download` means the download-time release was unavailable.
+  - `query`: project / data.category / data.type / workflow.type, and the number of files
+  - `assays`: counts and TPM assays used
+  - `reference`: gene model (from the cached TSV headers) and genome build with its source
+  - `samples`: tumor filter, tumor n, duplicate patients (kept and dropped aliquots) and final patient n
+  - `genes`: gene counts and the final matrix size
+  - `cache`: GDC cache folder, file mtime min/max as download-time evidence, and md5 agreement with GDC
+  - `outputs_md5`, and `outputs_counts_identical` (`--provenance-only` rebuilds the counts from `_se.rda` and compares them)
+  - `software`: R, TCGAbiolinks and SummarizedExperiment versions
+- `<C>_gdc_files.csv`: one row per GDC file, with file_id, file_name, barcode, md5sum, size, version, created/updated_datetime, data_release, workflow version, cache mtime/md5, header line, and the `in_query`, `in_cache`, `md5_match`, `in_se` and `used` flags. `used` marks the aliquots in the final matrix.
+- Run `Rscript 02a_download_tcga.R --provenance-only [C]` to regenerate these two files from `<C>_se.rda` and the GDC cache without downloading. It stops if `<C>_se.rda` is missing and writes no data files.
+
 ## 03 outputs
 - `table1_<GENE>.{docx,csv}`, `table1_overall`, `tss_by_group_<GENE>.csv`
 

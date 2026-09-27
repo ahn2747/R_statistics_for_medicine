@@ -72,6 +72,19 @@ cfg <- list(
   seed         = 2026,
 
   gdc_dir       = "D:/GDCdata",            # 02a 다운로드 폴더 (Windows 경로 길이 문제 회피)
+  # 02a GDC 쿼리 / 전처리 (값을 바꾸면 counts/발현 파일이 달라짐 → 05 재실행)
+  gdc = list(
+    project_prefix    = "TCGA-",
+    data.category     = "Transcriptome Profiling",
+    data.type         = "Gene Expression Quantification",
+    workflow.type     = "STAR - Counts",
+    count_assay       = "unstranded",      # → <C>_counts.rds (DESeq2)
+    tpm_assay         = "tpm_unstrand",    # → TCGA_<C>_RNAseq_Expression.csv (log2(TPM+1))
+    tumor_sample_code = "01",              # 바코드 sample type 코드 (01 = primary solid tumor)
+    sample_code_pos   = c(14, 15),         # 바코드에서 sample type 위치
+    patient_id_chars  = 12,                # 환자 ID = 바코드 앞 12자리
+    files_per_chunk   = 20
+  ),
   processed_dir = "data/processed",
   output_dir    = "output",
   manifest      = "data/processed/db_manifest.json"   # .sav 지문 (md5, n, 생존 n/사건 등)

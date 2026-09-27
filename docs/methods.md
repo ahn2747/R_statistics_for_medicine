@@ -19,6 +19,21 @@ Rules agreed with the user; don't change silently. Setting names are in docs/cov
   - RMST (High − Low, tau = 60) is reported for every gene.
 - **Multiple testing:** BH q-values are computed across the exploratory genes only. The primary gene reports its raw p, and its q is shown as "–".
 
+## RNA-seq data source (02a)
+Values are from `data/processed/<C>_gdc_provenance.json` (see docs/outputs.md). Rerun `02a --provenance-only` and update this section if the data are re-downloaded.
+- GDC Data Release 46.0 (August 10, 2026), recorded in `metadata(se)` by GDCprepare at download. Files were downloaded on 2026-09-27 (cache mtimes: COAD 11:11–11:18, READ 11:23–11:25 KST). All cached files (COAD 524, READ 177) match the GDC md5 checksums.
+- Gene model: GENCODE v36 (TSV header). The genome build is not stored in the se; TCGAbiolinks reports "hg38" for this harmonized query.
+- Assays: `unstranded` counts → DESeq2; `tpm_unstrand` → log2(TPM + 1) for QC and `genes_from_gdc`.
+- Samples:
+  - COAD: 524 files → 481 primary tumor (01) samples → 458 patients. 13 patients had several tumor aliquots; 23 aliquots were dropped, keeping the first per patient.
+  - READ: 177 files → 166 primary tumor samples → 166 patients (no duplicates).
+- Genes: 60,660 features → 59,427 unique symbols. For duplicated symbols, the one with the highest mean TPM is kept.
+- Software: TCGAbiolinks 2.40.0, SummarizedExperiment 1.42.0, R 4.6.1.
+
+Methods text:
+
+> RNA-seq gene expression data (STAR - Counts workflow; data category "Transcriptome Profiling", data type "Gene Expression Quantification") for TCGA-COAD and TCGA-READ were obtained from the NCI Genomic Data Commons (GDC Data Release 46.0, August 10, 2026) using TCGAbiolinks (v2.40.0) on September 27, 2026. Gene-level quantification was based on the GENCODE v36 annotation on the GRCh38 reference, as provided by the GDC harmonized pipeline. Only primary tumor samples (TCGA sample type code 01) were retained; when a patient had more than one primary tumor aliquot, the first aliquot was kept (COAD, 13 patients). Ensembl gene identifiers were collapsed to HGNC symbols by retaining, for each symbol, the gene with the highest mean TPM. Unstranded read counts were used for differential expression analysis, and log2(TPM + 1) values were used for quality control. The final matrices comprised 59,427 genes for 458 COAD and 166 READ patients.
+
 ## GSEA (05)
 - Use the existing `<gene>_group` from the merged data (the same patients and grouping as survival). Never re-split.
 - Main design: `~ tss + group` (TSS collapsed as above; groups are unbalanced across sites). Contrast: `group_levels[2]` vs `group_levels[1]` (High vs Low).
