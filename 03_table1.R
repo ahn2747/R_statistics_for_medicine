@@ -119,7 +119,28 @@ for (cancer in cfg$cancers) {
       modify_caption(paste0("Table 1. Clinical characteristics of TCGA-", cancer,
                             " patients by ", gene, " expression"))
     created <- c(created, save_tbl(tbl, cancer, paste0("table1_", gene)))
+
+    # ---- 검체 제공 기관(TSS) × 발현 그룹 (배치/기관 효과 점검) ----
+    tab <- table(d$tss, d[[grp]])
+    test <- test_chisq_fisher(d, "tss", grp)
+    tss_df <- data.frame(
+      TSS   = rownames(tab),
+      Low   = as.integer(tab[, "Low"]),
+      High  = as.integer(tab[, "High"]),
+      Total = as.integer(rowSums(tab)),
+      `High, %` = sprintf("%.1f", 100 * tab[, "High"] / rowSums(tab)),
+      check.names = FALSE
+    )
+    tss_df <- tss_df[order(-tss_df$Total), ]
+    tss_df$`p-value` <- c(fmt_p(test$p.value), rep("", nrow(tss_df) - 1))
+    tss_df$Test      <- c(test$method, rep("", nrow(tss_df) - 1))
+    created <- c(created, save_table(tss_df, cancer, paste0("tss_by_group_", gene, ".csv")))
+    cat(sprintf("           TSS × 그룹: %d개 기관, p = %s (%s)\n",
+                nrow(tss_df), fmt_p(test$p.value), test$method))
   }
+
+  # 더 이상 없는 유전자의 이전 결과 → _stale/
+  move_stale_outputs(cancer, c("table1_", "tss_by_group_"), created)
 }
 
 cat("\n생성된 파일 (", length(created), "개):\n", paste0("  ", created, collapse = "\n"), "\n", sep = "")

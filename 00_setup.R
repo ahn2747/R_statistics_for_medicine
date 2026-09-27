@@ -11,6 +11,7 @@ cran_pkgs <- c(
   "haven", "dplyr", "tidyr", "readr", "stringr", "purrr", "janitor",   # 01, 02b
   "gtsummary", "flextable", "officer",                                 # 03 Table 1
   "survival", "survminer", "ggplot2", "ggpubr", "forestmodel",         # 04 생존분석
+  "survRM2", "jsonlite",                                               # 04 RMST, 01 manifest
   "msigdbr", "BiocManager"                                             # 05 GSEA
 )
 bioc_pkgs <- c(

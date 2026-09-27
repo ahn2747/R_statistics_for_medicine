@@ -70,11 +70,3 @@
 "Tumor free","198 (48.5%)"
 "With tumor","210 (51.5%)"
 "Missing","46"
-"KRAS testing performed",
-"No","368 (88.5%)"
-"Yes","48 (11.5%)"
-"Missing","38"
-"BRAF testing performed",
-"No","375 (93.1%)"
-"Yes","28 (6.9%)"
-"Missing","51"

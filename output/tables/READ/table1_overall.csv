@@ -65,15 +65,3 @@
 "Tumor free","61 (40.7%)"
 "With tumor","89 (59.3%)"
 "Missing","19"
-"KRAS testing performed",
-"No","136 (90.1%)"
-"Yes","15 (9.9%)"
-"Missing","18"
-"BRAF testing performed",
-"No","142 (94.7%)"
-"Yes","8 (5.3%)"
-"Missing","19"
-"MMR IHC performed",
-"No","128 (94.1%)"
-"Yes","8 (5.9%)"
-"Missing","33"

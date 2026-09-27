@@ -20,7 +20,7 @@ for (cancer in cfg$cancers) {
   # 전체 환자 기준으로 병합/QC (그룹은 전체 코호트 기준으로 정의됨) → 마지막에 제외 적용
   clin <- readRDS(processed_path(cancer, "clinical_all.rds"))
   existing <- detect_genes(clin)
-  surv <- clin[, c("sample_id", cfg$surv_time, cfg$surv_status)]
+  surv <- clin[, c("sample_id", "surv_time", "status")]
   names(surv) <- c("sample_id", "sav_time", "sav_status")
 
   files <- Filter(function(f) toupper(str_match(basename(f), cfg$gene_pattern)[2]) == cancer,
@@ -97,7 +97,7 @@ for (cancer in cfg$cancers) {
   # ---- 발현값은 있으나 생존 결측인 환자 (생존분석에서 자동 제외) ----
   genes <- detect_genes(clin)
   has_expr <- rowSums(!is.na(clin[paste0(genes, "_expression")])) > 0
-  no_surv  <- has_expr & (is.na(clin[[cfg$surv_time]]) | is.na(clin[[cfg$surv_status]]))
+  no_surv  <- has_expr & (is.na(clin$surv_time) | is.na(clin$status))
   no_surv_df <- data.frame(sample_id = clin$sample_id[no_surv],
                            n_genes_with_expression = rowSums(!is.na(clin[no_surv, paste0(genes, "_expression"), drop = FALSE])))
   cat("발현 있음 + 생존 결측:", if (nrow(no_surv_df)) paste(no_surv_df$sample_id, collapse = ", ") else "없음", "\n")
