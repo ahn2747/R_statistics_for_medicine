@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"BRAF expression","Low (ref)",77,12,"Reference",,
+"","High",74,11,"0.78 (0.33–1.84)","0.573",
+"Age (per 10 years)","",151,23,"2.42 (1.42–4.10)","0.001",
+"Sex","Male (ref)",84,12,"Reference",,
+"","Female",67,11,"1.04 (0.45–2.42)","0.923",
+"Pathologic stage group","I–II (ref)",79,7,"Reference",,
+"","III–IV",72,16,"2.84 (1.15–7.06)","0.024",

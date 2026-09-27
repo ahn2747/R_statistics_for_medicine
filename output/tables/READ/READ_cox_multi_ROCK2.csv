@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"ROCK2 expression","Low (ref)",77,15,"Reference",,
+"","High",74,8,"0.62 (0.24–1.62)","0.332",
+"Age (per 10 years)","",151,23,"2.21 (1.26–3.87)","0.006",
+"Sex","Male (ref)",84,12,"Reference",,
+"","Female",67,11,"0.98 (0.42–2.27)","0.962",
+"Pathologic stage group","I–II (ref)",79,7,"Reference",,
+"","III–IV",72,16,"2.72 (1.09–6.74)","0.031",

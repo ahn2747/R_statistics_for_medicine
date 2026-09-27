@@ -51,4 +51,4 @@ Rules agreed with the user; don't change silently. Setting names are in docs/cov
   - Comparing the last two on the same patients isolates the effect of MMR adjustment. This answers the MSI/immune-confounding question that TCGA can't address yet (no MSI result).
 - **Subgroup:** KM, univariable and multivariable models are repeated in pMMR.
 - **PH, time-split and RMST:** these follow the 04 rules. cox.zph runs for every model. The time-split Cox (0–24 / >24 months) runs on the multivariable model only when the gene term violates PH. RMST (High − Low, tau 60) is always reported. Time-0 patients are kept (the survSplit origin is shifted below 0).
-- **Direction check:** each GEO HR is compared with the sign of the TCGA multivariable HR from `output/tables/<validates>/survival_summary_raw.csv`.
+- **Direction check:** each GEO HR is compared with the sign of the TCGA multivariable HR from `output/tables/<validates>/<validates>_survival_summary_raw.csv`.

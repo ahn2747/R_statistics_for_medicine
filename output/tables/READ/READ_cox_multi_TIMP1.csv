@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"TIMP1 expression","Low (ref)",74,7,"Reference",,
+"","High",76,16,"1.92 (0.76–4.85)","0.169",
+"Age (per 10 years)","",150,23,"2.29 (1.35–3.88)","0.002",
+"Sex","Male (ref)",84,12,"Reference",,
+"","Female",66,11,"0.93 (0.40–2.19)","0.876",
+"Pathologic stage group","I–II (ref)",78,7,"Reference",,
+"","III–IV",72,16,"2.56 (1.02–6.40)","0.045",

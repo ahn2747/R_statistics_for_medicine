@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"APC expression","Low (ref)",77,13,"Reference",,
+"","High",74,10,"1.05 (0.44–2.49)","0.915",
+"Age (per 10 years)","",151,23,"2.48 (1.43–4.30)","0.001",
+"Sex","Male (ref)",84,12,"Reference",,
+"","Female",67,11,"1.01 (0.44–2.35)","0.979",
+"Pathologic stage group","I–II (ref)",79,7,"Reference",,
+"","III–IV",72,16,"2.83 (1.14–7.01)","0.024",

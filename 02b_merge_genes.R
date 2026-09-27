@@ -7,7 +7,7 @@
 #   - cfg$genes_from_gdc: 02a 발현 행렬에서 추출 + median split
 # 결과:
 #   data/processed/<CANCER>_merged.{rds,csv,sav}
-#   output/tables/<CANCER>/merge_QC.csv, merge_QC_status_crosstab.csv, merge_QC_no_survival.csv
+#   output/tables/<CANCER>/<CANCER>_merge_QC.csv, _merge_QC_status_crosstab.csv, _merge_QC_no_survival.csv
 # =============================================================
 
 source("config.R")

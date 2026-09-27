@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"MS4A1 expression","Low (ref)",75,17,"Reference",,
+"","High",75,6,"0.34 (0.13–0.89)","0.028",
+"Age (per 10 years)","",150,23,"2.20 (1.31–3.68)","0.003",
+"Sex","Male (ref)",83,12,"Reference",,
+"","Female",67,11,"0.81 (0.34–1.93)","0.633",
+"Pathologic stage group","I–II (ref)",79,7,"Reference",,
+"","III–IV",71,16,"2.63 (1.07–6.52)","0.036",

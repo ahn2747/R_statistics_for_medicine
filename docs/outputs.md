@@ -1,12 +1,15 @@
 # Outputs
 
+**File naming:** every table and figure is `<prefix>_<analysis>[_<GENE>].<ext>`. The prefix is the cancer code for 01–05 (e.g. `COAD_table1_MS4A1.docx`, `READ_km_TIMP1.pdf`, `COAD_volcano.pdf` under `gsea/<GENE>/`) and the GSE ID for 06 (`GSE39582_km_OS.pdf`). The file lists below omit the prefix.
+
 ## Output helpers (`R/utils.R`)
 - All of these take an optional `subdir` (e.g. `"gsea/MS4A1"`) under `output/<type>/<C>/`.
-- 06 writes with `cancer = "GEO"` and `subdir = <GSE>`, i.e. `output/<type>/GEO/<GSE>/`.
+- `save_table()`, `save_df_table()` and `save_fig()` add the prefix themselves (`out_file(prefix, name)`; `prefix` defaults to `cancer`). Code that builds a path by hand (03's Table 1 .docx, 04's `zph_` PDF) must call `out_file()` too.
+- 06 writes with `cancer = "GEO"`, `subdir = <GSE>` and `prefix = <GSE>`, i.e. `output/<type>/GEO/<GSE>/<GSE>_*`.
 - `save_table()` (CSV, UTF-8 BOM) and `save_df_table()` (.docx + .csv)
 - `save_fig()` (cairo PDF + 300-dpi LZW TIFF)
 - `fmt_hr()` and `fmt_p()` (2 decimals; `<0.001`)
-- `move_stale_outputs()`: gene-specific files that this run didn't recreate are moved to `output/*/<C>/_stale/`, never deleted. It uses the prefixes each script owns:
+- `move_stale_outputs()`: gene-specific files that this run didn't recreate are moved to `output/*/<C>/_stale/`, never deleted. Files without the `<prefix>_` start (the old naming) are moved too. It matches `<prefix>_` + the families each script owns:
   - 03: `table1_`, `tss_by_group_`
   - 04: `km_`, `forest_multi_`, `zph_`, `cox_multi_`
   - 06 (under `GEO/<GSE>/`): `km_`, `forest`, `cox_`, `zph_`

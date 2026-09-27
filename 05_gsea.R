@@ -6,7 +6,7 @@
 #   - 민감도: ~ <cfg$gsea_sensitivity_covariates> + group (기본: 공변량 없음) → robust_no_covariate
 #   - 순위: DESeq2 Wald stat → MSigDB .chip으로 옛 기호 재매핑 → 중복 평균
 # 입력: data/processed/<C>_counts.rds (02a), <C>_merged.rds, database/TCGA_<C>_RNAseq_Expression.csv
-# 결과: output/tables/<C>/gsea/<GENE>/  de_results.csv, gsea_<collection>.csv, gsea_QC.csv, gsea_summary
+# 결과 (파일명 앞에 <C>_): output/tables/<C>/gsea/<GENE>/  de_results.csv, gsea_<collection>.csv, gsea_QC.csv, gsea_summary
 #       output/figures/<C>/gsea/<GENE>/ volcano, pca, nes_<collection>, enrichment_<pathway>
 #       data/processed/<C>_dds_<GENE>.rds
 # =============================================================

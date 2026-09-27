@@ -5,7 +5,7 @@
 #   data/processed/<CANCER>_clinical_all.rds  (전체 환자, neoadjuvant_flag 포함)
 #   data/processed/<CANCER>_clinical.rds      (분석용: cfg$exclude_neoadjuvant 적용)
 #   data/processed/db_manifest.json           (.sav md5, n, 생존 n/사건, 열, 유전자, 신보조요법 ID)
-#   output/tables/<CANCER>/clinical_QC_median_split.csv, clinical_QC_labels.csv
+#   output/tables/<CANCER>/<CANCER>_clinical_QC_median_split.csv, _clinical_QC_labels.csv
 # manifest 규칙:
 #   같은 md5인데 n/생존 n/사건 수가 다름 → 중단 (코드 변경이 결과를 바꿈)
 #   md5가 바뀜 → 이전 대비 변경 내용 출력 후 계속 (manifest 갱신)

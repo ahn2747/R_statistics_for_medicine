@@ -17,7 +17,7 @@ R 4.6.1 is not on PATH. Use `"C:/Program Files/R/R-4.6.1/bin/Rscript.exe" <scrip
 03_table1.R             # table1_<GENE>.{docx,csv}, table1_overall, tss_by_group_<GENE>.csv
 04_survival.R           # KM, Cox, strata(tss), cox.zph, time-split Cox, RMST, BH q, forest plots
 05_gsea.R [COAD]        # DESeq2 High vs Low (~ tss + group) + fgsea on MSigDB; needs 02a outputs; run one cancer per process
-06_external_geo.R [GSE] # GEO validation of cfg$primary_gene (cfg$geo_datasets; needs GEOquery, i.e. 00_setup.R without --core; reads 04's survival_summary_raw.csv)
+06_external_geo.R [GSE] # GEO validation of cfg$primary_gene (cfg$geo_datasets; needs GEOquery, i.e. 00_setup.R without --core; reads 04's <C>_survival_summary_raw.csv)
 ```
 - `07_timer` and `08_proteomics` are optional and not written yet.
 - **06:** the first run downloads the series matrix + GPL annotation into `cfg$geo_dir` (`data/geo`, git-ignored via `data/`) and caches `<GSE>_<GPL>_eset.rds`. Later runs take ~1 min. A GSE argument overrides `cfg$geo_datasets`.
@@ -83,6 +83,8 @@ R 4.6.1 is not on PATH. Use `"C:/Program Files/R/R-4.6.1/bin/Rscript.exe" <scrip
 ## Conventions
 - Code comments and console messages are in Korean. Table and figure labels are in English.
 - On data inconsistencies, `stop()` and name the patient IDs, plus the `cfg` entry to fix when there is one. Don't silently drop or coerce.
+- Output files are named `<cancer>_<analysis>[_<GENE>]`, or `<GSE>_…` for 06. Write them through `save_table()`/`save_df_table()`/`save_fig()`, which add the prefix; hand-built paths must use `out_file()`. File names in the docs omit the prefix.
+- Call flextable functions as `flextable::<fn>`: survminer attaches ggpubr, whose `font()` masks `flextable::font()`.
 - Keep flextable captions as plain text; markdown `**` shows up literally in the .docx.
 - Combine the KM plot and risk table with patchwork (`p$plot / p$table`); wrap survminer plotting in `suppressMessages()` (see docs/notes.md).
 - Build PDFs with `cairo_pdf` so that — ≤ – render correctly.

@@ -8,7 +8,7 @@
 #   5. 비례위험 가정 (cox.zph)
 #   6. 유전자 간 BH 보정 q-value
 # 입력: data/processed/<CANCER>_merged.rds (신보조요법 제외 적용됨)
-# 결과: output/tables/<CANCER>/survival_summary, km_summary, cox_uni, cox_multi_<GENE>, ph_tests
+# 결과 (파일명 앞에 <CANCER>_): output/tables/<CANCER>/survival_summary, km_summary, cox_uni, cox_multi_<GENE>, ph_tests
 #       output/figures/<CANCER>/km_<GENE>, forest_multi_<GENE>, forest_genes, zph_<GENE>
 # =============================================================
 
@@ -109,7 +109,7 @@ analyze_gene <- function(g, base, cancer, uni_cov_terms) {
   # ---- 5. 비례위험 그림 (위반 모형만) ----
   res$zph <- zph
   if (any(zph$flag)) {
-    f <- file.path(out_dir(cancer, "figures"), paste0("zph_", gene, ".pdf"))
+    f <- file.path(out_dir(cancer, "figures"), out_file(cancer, paste0("zph_", gene, ".pdf")))
     grDevices::cairo_pdf(f, width = 7, height = 5, onefile = TRUE)
     for (mod in unique(zph$model[zph$flag])) {
       z <- cox.zph(if (mod == "univariable") fit_u else fit_m)

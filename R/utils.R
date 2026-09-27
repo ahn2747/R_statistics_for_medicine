@@ -118,16 +118,19 @@ processed_path <- function(cancer, suffix) {
   file.path(cfg$processed_dir, paste0(cancer, "_", suffix))
 }
 
+# 결과 파일 이름: <prefix>_<분석>[_<GENE>] (prefix 기본값 = 암종, 06은 GSE ID)
+out_file <- function(prefix, name) paste0(prefix, "_", name)
+
 # UTF-8 (BOM) CSV → Excel에서 ≤, – 등 기호가 깨지지 않음
-save_table <- function(df, cancer, name, subdir = NULL) {
-  path <- file.path(out_dir(cancer, "tables", subdir), name)
+save_table <- function(df, cancer, name, subdir = NULL, prefix = cancer) {
+  path <- file.path(out_dir(cancer, "tables", subdir), out_file(prefix, name))
   readr::write_excel_csv(df, path, na = "")
   invisible(path)
 }
 
-# data.frame → <stem>.docx (flextable) + <stem>.csv. 생성된 경로 반환
+# data.frame → <prefix>_<stem>.docx (flextable) + .csv. 생성된 경로 반환
 save_df_table <- function(df, cancer, stem, caption = NULL, landscape = FALSE, font_size = 9,
-                          subdir = NULL) {
+                          subdir = NULL, prefix = cancer) {
   ft <- flextable::flextable(df) |>
     flextable::font(fontname = "Times New Roman", part = "all") |>
     flextable::fontsize(size = font_size, part = "all") |>
@@ -137,25 +140,27 @@ save_df_table <- function(df, cancer, stem, caption = NULL, landscape = FALSE, f
   sect <- if (landscape) {
     officer::prop_section(page_size = officer::page_size(orient = "landscape"))
   }
-  docx <- file.path(out_dir(cancer, "tables", subdir), paste0(stem, ".docx"))
+  docx <- file.path(out_dir(cancer, "tables", subdir), out_file(prefix, paste0(stem, ".docx")))
   flextable::save_as_docx(ft, path = docx, pr_section = sect)
-  c(docx, save_table(df, cancer, paste0(stem, ".csv"), subdir))
+  c(docx, save_table(df, cancer, paste0(stem, ".csv"), subdir, prefix))
 }
 
-# ggplot/patchwork → <stem>.pdf (cairo, 유니코드 OK) + <stem>.tiff (300 dpi, LZW)
-save_fig <- function(plot, cancer, stem, width = 7, height = 6, dpi = 300, subdir = NULL) {
+# ggplot/patchwork → <prefix>_<stem>.pdf (cairo, 유니코드 OK) + .tiff (300 dpi, LZW)
+save_fig <- function(plot, cancer, stem, width = 7, height = 6, dpi = 300, subdir = NULL,
+                     prefix = cancer) {
   dir <- out_dir(cancer, "figures", subdir)
-  pdf <- file.path(dir, paste0(stem, ".pdf"))
-  tif <- file.path(dir, paste0(stem, ".tiff"))
+  pdf <- file.path(dir, out_file(prefix, paste0(stem, ".pdf")))
+  tif <- file.path(dir, out_file(prefix, paste0(stem, ".tiff")))
   ggplot2::ggsave(pdf, plot, width = width, height = height, device = grDevices::cairo_pdf)
   ggplot2::ggsave(tif, plot, width = width, height = height, dpi = dpi,
                   device = "tiff", compression = "lzw")
   c(pdf, tif)
 }
 
-# 이번 실행에서 만들지 않은 결과 파일(prefix로 시작; NULL = 모든 파일) → <dir>/_stale/
+# 이번 실행에서 만들지 않은 결과 파일(<prefix>_<prefixes>로 시작; NULL = 모든 파일) → <dir>/_stale/
+# <prefix>_로 시작하지 않는 이전 이름 형식 파일도 함께 이동
 # (삭제하지 않고 이동; Word 잠금 파일 ~$* 와 하위 폴더는 무시)
-move_stale_outputs <- function(cancer, prefixes, keep, subdir = NULL) {
+move_stale_outputs <- function(cancer, prefixes, keep, subdir = NULL, prefix = cancer) {
   norm <- function(p) normalizePath(p, winslash = "/", mustWork = FALSE)
   keep <- norm(keep)
   moved <- character()
@@ -163,8 +168,9 @@ move_stale_outputs <- function(cancer, prefixes, keep, subdir = NULL) {
     dir <- out_dir(cancer, type, subdir)
     f <- list.files(dir, full.names = TRUE)
     f <- f[!dir.exists(f) & !startsWith(basename(f), "~$")]
+    legacy <- !startsWith(basename(f), out_file(prefix, ""))
     has_prefix <- if (is.null(prefixes)) rep(TRUE, length(f)) else
-      Reduce(`|`, lapply(prefixes, function(p) startsWith(basename(f), p)), rep(FALSE, length(f)))
+      Reduce(`|`, lapply(prefixes, function(p) startsWith(basename(f), out_file(prefix, p))), legacy)
     stale <- f[has_prefix & !norm(f) %in% keep]
     if (length(stale)) {
       dir.create(file.path(dir, "_stale"), showWarnings = FALSE)

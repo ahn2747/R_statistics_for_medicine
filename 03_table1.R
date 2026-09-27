@@ -5,7 +5,7 @@
 #   - 범주형: chi-square (기대빈도 < 5 셀이 있으면 Fisher's exact로 자동 전환)
 #   - 결측은 "Missing" 행으로 표시, p-value 계산에서는 제외
 # 입력: data/processed/<CANCER>_merged.rds
-# 결과: output/tables/<CANCER>/table1_<GENE>.{docx,csv}, table1_overall.{docx,csv}
+# 결과 (파일명 앞에 <CANCER>_): output/tables/<CANCER>/table1_<GENE>.{docx,csv}, table1_overall.{docx,csv}
 # =============================================================
 
 source("config.R")
@@ -74,7 +74,7 @@ save_tbl <- function(tbl, cancer, stem) {
     flextable::font(fontname = "Times New Roman", part = "all") |>
     flextable::fontsize(size = 9, part = "all") |>
     flextable::autofit()
-  docx <- file.path(dir, paste0(stem, ".docx"))
+  docx <- file.path(dir, out_file(cancer, paste0(stem, ".docx")))
   flextable::save_as_docx(ft, path = docx)
 
   # CSV: 마크다운(**, __) 및 헤더 줄바꿈 제거, 검정명 열 추가
