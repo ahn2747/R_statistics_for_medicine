@@ -57,7 +57,7 @@ make_summary <- function(d, vars, by = NULL) {
   labs <- var_labels[intersect(vars, names(var_labels))]
   tbl_summary(
     d, by = all_of(by), include = all_of(vars),
-    type      = list(all_dichotomous() ~ "categorical", any_of("age") ~ "continuous"),
+    type      = list(all_dichotomous() ~ "categorical", any_of(cfg$table1_continuous) ~ "continuous"),
     statistic = list(all_continuous() ~ "{median} [{p25}, {p75}]",
                      all_categorical() ~ "{n} ({p}%)"),
     digits    = list(all_continuous() ~ 1, all_categorical() ~ c(0, 1)),
@@ -106,8 +106,8 @@ for (cancer in cfg$cancers) {
     gene <- toupper(g)
     grp  <- paste0(g, "_group")
     d    <- df[!is.na(df[[grp]]), ]
-    cat(sprintf("  %-8s n = %d (Low %d / High %d)\n", gene, nrow(d),
-                sum(d[[grp]] == "Low"), sum(d[[grp]] == "High")))
+    cat(sprintf("  %-8s n = %d (%s %d / %s %d)\n", gene, nrow(d),
+                group_ref(), sum(d[[grp]] == group_ref()), group_alt(), sum(d[[grp]] == group_alt())))
 
     rm(list = ls(test_log), envir = test_log)
     tbl <- make_summary(d, vars, by = grp) |>
@@ -120,27 +120,25 @@ for (cancer in cfg$cancers) {
                             " patients by ", gene, " expression"))
     created <- c(created, save_tbl(tbl, cancer, paste0("table1_", gene)))
 
-    # ---- 검체 제공 기관(TSS) × 발현 그룹 (배치/기관 효과 점검) ----
-    tab <- table(d$tss, d[[grp]])
-    test <- test_chisq_fisher(d, "tss", grp)
-    tss_df <- data.frame(
-      TSS   = rownames(tab),
-      Low   = as.integer(tab[, "Low"]),
-      High  = as.integer(tab[, "High"]),
-      Total = as.integer(rowSums(tab)),
-      `High, %` = sprintf("%.1f", 100 * tab[, "High"] / rowSums(tab)),
-      check.names = FALSE
-    )
+    # ---- 층화 변수(기본 TSS) × 발현 그룹 (배치/기관 효과 점검) ----
+    sv  <- cfg$strata_var
+    ref <- group_ref()
+    alt <- group_alt()
+    tab <- table(d[[sv]], d[[grp]])
+    test <- test_chisq_fisher(d, sv, grp)
+    tss_df <- data.frame(rownames(tab), as.integer(tab[, ref]), as.integer(tab[, alt]),
+                         as.integer(rowSums(tab)), sprintf("%.1f", 100 * tab[, alt] / rowSums(tab)))
+    names(tss_df) <- c(toupper(sv), ref, alt, "Total", paste0(alt, ", %"))
     tss_df <- tss_df[order(-tss_df$Total), ]
     tss_df$`p-value` <- c(fmt_p(test$p.value), rep("", nrow(tss_df) - 1))
     tss_df$Test      <- c(test$method, rep("", nrow(tss_df) - 1))
-    created <- c(created, save_table(tss_df, cancer, paste0("tss_by_group_", gene, ".csv")))
-    cat(sprintf("           TSS × 그룹: %d개 기관, p = %s (%s)\n",
-                nrow(tss_df), fmt_p(test$p.value), test$method))
+    created <- c(created, save_table(tss_df, cancer, paste0(sv, "_by_group_", gene, ".csv")))
+    cat(sprintf("           %s × 그룹: %d개 수준, p = %s (%s)\n",
+                toupper(sv), nrow(tss_df), fmt_p(test$p.value), test$method))
   }
 
   # 더 이상 없는 유전자의 이전 결과 → _stale/
-  move_stale_outputs(cancer, c("table1_", "tss_by_group_"), created)
+  move_stale_outputs(cancer, c("table1_", paste0(cfg$strata_var, "_by_group_")), created)
 }
 
 cat("\n생성된 파일 (", length(created), "개):\n", paste0("  ", created, collapse = "\n"), "\n", sep = "")

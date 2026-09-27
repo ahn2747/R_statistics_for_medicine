@@ -2,6 +2,7 @@
 # config.R
 # 프로젝트 설정 — 암종/유전자/분석 옵션은 여기서만 수정
 # 새 암종 추가 / .sav 갱신 절차는 CLAUDE.md의 체크리스트 참고
+# 공변량/층화/보정/제외 설정 요약은 CLAUDE.md의 "Covariates" 표 참고
 # =============================================================
 
 cfg <- list(
@@ -21,30 +22,53 @@ cfg <- list(
                   "lymphovascular_invasion_indicator", "vascular_invasion_indicator",
                   "residual_tumor", "histologic_diagnosis",
                   "anatomic_neoplasm_subdivision", "tumor_status"),
+  table1_continuous = c("age"),            # Table 1에서 연속형으로 요약할 변수 (median [IQR], Wilcoxon)
 
-  exclude_neoadjuvant  = TRUE,             # 신보조요법 환자 제외
-  cox_covariates       = c("age", "gender", "stage"),   # age는 연속형 (10세 단위)
-  stage_collapsed      = "pathologic_stage_12_34",      # EPV 부족 시 stage 대신 사용 (없으면 stage로 생성)
-  epv_min              = 10,               # 다변량 Cox EPV 경고 기준
+  # ---- 공변량 / 층화 / 보정 / 제외 ---------------------------------------
+  # 제외
+  exclude_neoadjuvant  = TRUE,             # 신보조요법 환자 제외 (값은 schema$neoadjuvant_yes)
+
+  # 노출(발현 그룹): 첫 번째 = 기준(reference), 두 번째 = 비교 (median 초과)
+  group_levels         = c("Low", "High"),
+  # factor 기준 수준 (존재하는 변수만 적용)
+  reference_levels     = list(gender = "Male", pathologic_stage = "I", stage = "I",
+                              pathologic_stage_12_34 = "I\u2013II"),
+
+  # Cox 모형 (04)
+  cox_covariates       = c("age", "gender", "stage"),            # 다변량 보정 변수
+  cox_uni_covariates   = c("age", "gender", "stage", "pathologic_stage_12_34"),  # 단변량 표
+  covariate_scale      = list(age = list(by = 10, label = "Age (per 10 years)")),  # 연속형 단위
+  stage_full           = "stage",                                 # EPV 부족 시 교체될 stage 변수
+  stage_collapsed      = "pathologic_stage_12_34",                # 교체 변수 (없으면 stage로 생성)
+  epv_min              = 10,               # 다변량 Cox EPV 기준 (미만 → stage 병합, 그래도 미만 → 탐색적)
   min_events           = 10,               # 유전자별 생존분석 최소 사건 수 (미만이면 건너뜀)
-  tss_min_n            = 10,               # strata(tss) 민감도 분석: 이 수 미만 기관은 "Other"
+
+  # 층화 / 기관 효과
+  strata_var           = "tss",            # 04 민감도 strata(), 03 TSS × 그룹 교차표
+  tss_barcode_pos      = c(6, 7),          # TCGA-XX-.... 에서 기관 코드 위치
+  collapse_small_levels = c(tss = 10),     # 이 수 미만 수준은 합침 (04 strata, 05 design)
+  collapse_other_label = "Other",
+
   km_times             = c(36, 60),        # 3년/5년 생존율 (개월)
   ph_split_months      = 24,               # PH 위반 유전자: 0–24개월 / >24개월 시간 분할 Cox
   rmst_tau             = 60,               # RMST 차이 계산 시점 (개월)
   median_tie_tolerance = 1,                # median-split 재현 QC 허용 오차 (명)
-  group_colors         = c(Low = "#2E6FB7", High = "#C8442F"),   # 모든 그림 공통
+  group_colors         = c(Low = "#2E6FB7", High = "#C8442F"),   # 모든 그림 공통 (group_levels 이름)
 
   # ---- 05 GSEA ----
   gsea_genes             = NULL,           # NULL = primary_gene, "all" = 모든 유전자, 또는 c("MS4A1", "TIMP1")
-  gsea_design_covariates = c("tss"),       # DESeq2 design: ~ <공변량> + group (tss는 소수 기관 "Other"로 병합)
+  gsea_design_covariates = c("tss"),       # 주 design: ~ <공변량> + group
+  gsea_sensitivity_covariates = character(),   # 민감도 design (기본: ~ group, 공변량 없음)
   gsea_extra_collections = list(           # 기본(Hallmark, Reactome, KEGG, GO:BP) 외 추가 MSigDB 컬렉션
     C8 = list(collection = "C8")           #   C8: 세포 유형 signature (면역/B세포)
   ),
   gsea_highlight = c("HALLMARK_INTERFERON_GAMMA_RESPONSE", "HALLMARK_ALLOGRAFT_REJECTION",
                      "REACTOME_SIGNALING_BY_THE_B_CELL_RECEPTOR_BCR",
                      "KEGG_B_CELL_RECEPTOR_SIGNALING_PATHWAY"),   # 항상 enrichment plot 그릴 경로
+  gsea_c8_pattern = "B_CELL|PLASMA",       # C8에서 enrichment plot을 그릴 세포 유형 (정규식, padj < 0.05)
+  gsea_enrichment_top = 5,                 # enrichment plot: Hallmark 상위 N개 (padj 순) + C8 패턴 상위 N개
   gsea_size    = c(15, 500),               # fgsea minSize, maxSize
-  n_cores      = 4,                        # DESeq2/fgsea 병렬 (Windows: SnowParam)
+  n_cores      = 2,                        # DESeq2/fgsea 병렬 (Windows: SnowParam; 워커마다 데이터 복사 → 메모리 주의)
   seed         = 2026,
 
   gdc_dir       = "D:/GDCdata",            # 02a 다운로드 폴더 (Windows 경로 길이 문제 회피)
@@ -59,17 +83,18 @@ cfg <- list(
 # 암종별로 다른 항목만 cfg$schema$<CANCER>에 적음 (modifyList로 병합).
 # 선택 항목(neoadjuvant, last_contact)이 없는 암종은 NULL 대신 NA로 지정.
 cfg$schema_default <- list(
-  id           = "sampleID",
-  time         = "Days",
-  time_unit    = "days",                   # "days" 또는 "months"
-  status       = "Status",
-  event_value  = 1,                        # 사건(사망)을 뜻하는 값 (예: 1, "Dead")
-  stage        = "pathologic_Stage",
-  stage_format = "numeric",                # "numeric" (1–4) 또는 "ajcc_text" ("Stage IIIB")
-  age          = "age_at_initial_pathologic_diagnosis",
-  sex          = "gender",
-  neoadjuvant  = "history_neoadjuvant_treatment",
-  last_contact = "last_contact_days_to"
+  id              = "sampleID",
+  time            = "Days",
+  time_unit       = "days",                # "days" 또는 "months"
+  status          = "Status",
+  event_value     = 1,                     # 사건(사망)을 뜻하는 값 (예: 1, "Dead")
+  stage           = "pathologic_Stage",
+  stage_format    = "numeric",             # "numeric" (1–4) 또는 "ajcc_text" ("Stage IIIB")
+  age             = "age_at_initial_pathologic_diagnosis",
+  sex             = "gender",
+  neoadjuvant     = "history_neoadjuvant_treatment",
+  neoadjuvant_yes = "Yes",                 # 신보조요법 받음을 뜻하는 값 (대소문자 무시)
+  last_contact    = "last_contact_days_to"
 )
 cfg$schema <- list(
   COAD = list(),
@@ -77,6 +102,20 @@ cfg$schema <- list(
   # 예: LIHC = list(stage = "ajcc_pathologic_tumor_stage", stage_format = "ajcc_text")
 )
 
-# ---- 암종별 값 라벨 / 라벨 일관성 규칙 재정의 (기본값은 R/utils.R) ----------
+# ---- 값 라벨 / 라벨 일관성 규칙 (기본값 + 암종별 재정의) ----------------------
+# 코드 → 라벨. 라벨 순서 = factor 수준 순서 (기준 수준은 reference_levels로 지정)
+cfg$value_labels_default <- list(
+  pathologic_stage       = c(`1` = "I", `2` = "II", `3` = "III", `4` = "IV"),
+  pathologic_stage_12_34 = c(`0` = "I\u2013II", `1` = "III\u2013IV"),
+  cea_g                  = c(`0` = "\u22645 ng/mL", `1` = ">5 ng/mL"),  # 5.0은 0
+  age_g                  = c(Low = "\u226465", High = "\u226566")
+)
+# 그룹 변수(code)가 원 변수(source) > cutoff 와 일치해야 함 (불일치 시 01 중단)
+# high = source > cutoff 일 때의 코드 값
+cfg$label_rules_default <- list(
+  cea_g                  = list(source = "cea_level_pretreatment", cutoff = 5,  high = "1"),
+  age_g                  = list(source = "age",                    cutoff = 65, high = "High"),
+  pathologic_stage_12_34 = list(source = "pathologic_stage",       cutoff = 2,  high = "1")
+)
 cfg$value_labels <- list(COAD = list(), READ = list())
 cfg$label_rules  <- list(COAD = list(), READ = list())

@@ -4,7 +4,7 @@
 #   1. Kaplan–Meier (Low vs High) + log-rank, 중앙 생존기간, 3/5년 생존율
 #   2. 단변량 Cox: 유전자 그룹, 유전자 연속형(log2), 임상 공변량
 #   3. 다변량 Cox: 유전자 그룹 + age(10세 단위) + gender + stage (EPV 부족 시 stage I–II vs III–IV)
-#   4. 민감도 분석: 다변량 + strata(tss)
+#   4. 민감도 분석: 다변량 + strata(cfg$strata_var)
 #   5. 비례위험 가정 (cox.zph)
 #   6. 유전자 간 BH 보정 q-value
 # 입력: data/processed/<CANCER>_merged.rds (신보조요법 제외 적용됨)
@@ -23,12 +23,13 @@ suppressPackageStartupMessages({
 
 # ---- 모형 변수 ---------------------------------------------------------
 
-# 설정 변수명 → 모형 항 (age는 10세 단위)
-model_term <- function(v) if (v == "age") "age_10" else v
+# 설정 변수명 → 모형 항 (cfg$covariate_scale에 있는 연속형은 단위 변환, 예: age → age_per10)
+model_term <- function(v) scaled_term(v)
 
 term_labels <- function(terms, gene = NULL) {
   labs <- sapply(terms, function(t) {
-    if (t == "age_10") return("Age (per 10 years)")
+    sl <- scaled_label(t)
+    if (!is.null(sl)) return(sl)
     if (t == "group") return(paste(gene, "expression"))
     if (t == "expr_log2") return(paste(gene, "expression, log2 (per 1 unit)"))
     if (t %in% names(var_labels)) var_labels[[t]] else t
@@ -36,11 +37,16 @@ term_labels <- function(terms, gene = NULL) {
   setNames(labs, terms)
 }
 
+# 캡션용 보정 변수 목록 (cfg$cox_covariates → "age (per 10 years), sex and pathologic stage")
+adjust_text <- function() {
+  labs <- tolower(unname(term_labels(unname(sapply(cfg$cox_covariates, model_term)))))
+  if (length(labs) < 2) return(paste(labs, collapse = ""))
+  paste0(paste(head(labs, -1), collapse = ", "), " and ", tail(labs, 1))
+}
+
 # 생존 정보가 있는 환자 + 모형용 변수
 surv_base <- function(df) {
-  d <- df[!is.na(df$os_months) & !is.na(df$status), ]
-  if ("age" %in% names(d)) d$age_10 <- d$age / 10
-  d
+  add_scaled_terms(df[!is.na(df$os_months) & !is.na(df$status), ])
 }
 
 # 모형 항들이 모두 있는 행만 (완전 사례), 빈 factor 수준 제거
@@ -153,8 +159,8 @@ km_plot <- function(fit, d, gene, cancer, p_lr) {
   # survminer + ggplot2 4.x의 "Ignoring unknown labels" 메시지 억제 (결과에는 영향 없음)
   p <- suppressMessages(ggsurvplot(
     fit, data = d,
-    palette = unname(cfg$group_colors[c("Low", "High")]),
-    legend.labs = c("Low", "High"), legend.title = paste(gene, "expression"),
+    palette = unname(cfg$group_colors[cfg$group_levels]),
+    legend.labs = cfg$group_levels, legend.title = paste(gene, "expression"),
     pval = paste("Log-rank p", ifelse(p_lr < 0.001, "< 0.001", paste("=", sprintf("%.3f", p_lr)))),
     pval.size = 4, censor = TRUE, censor.shape = "|", censor.size = 3,
     risk.table = TRUE, risk.table.title = "Number at risk",
@@ -221,11 +227,11 @@ analyze_gene <- function(g, base, cancer, uni_cov_terms) {
   d$expr_log2 <- d[[paste0(g, "_expression_log2")]]
   d <- d[!is.na(d$group), ]
   n_ev <- sum(d$status)
-  cnt  <- table(factor(d$group, levels = c("Low", "High")))
+  cnt  <- table(factor(d$group, levels = cfg$group_levels))
   res$summary <- data.frame(gene = gene, n = nrow(d), events = n_ev,
-                            n_low = cnt[["Low"]], n_high = cnt[["High"]])
-  cat(sprintf("  %-8s n = %d (Low %d / High %d), 사건 %d\n",
-              gene, nrow(d), cnt[["Low"]], cnt[["High"]], n_ev))
+                            n_low = cnt[[group_ref()]], n_high = cnt[[group_alt()]])
+  cat(sprintf("  %-8s n = %d (%s %d / %s %d), 사건 %d\n",
+              gene, nrow(d), group_ref(), cnt[[group_ref()]], group_alt(), cnt[[group_alt()]], n_ev))
 
   if (n_ev < cfg$min_events || any(cnt == 0)) {
     msg <- if (any(cnt == 0)) "빈 발현 그룹" else paste0("사건 ", n_ev, " < ", cfg$min_events)
@@ -241,8 +247,8 @@ analyze_gene <- function(g, base, cancer, uni_cov_terms) {
   res$km <- data.frame(gene = gene, ks)
   res$files <- c(res$files, suppressMessages(save_fig(km_plot(km, d, gene, cancer, p_lr), cancer,
                                                       paste0("km_", gene), width = 7, height = 6)))
-  low  <- ks[ks$group == "Low", ]
-  high <- ks[ks$group == "High", ]
+  low  <- ks[ks$group == group_ref(), ]
+  high <- ks[ks$group == group_alt(), ]
 
   # ---- 2. 단변량 Cox (그룹, 연속형) ----
   labs_g <- term_labels(c("group", "expr_log2"), gene)
@@ -254,18 +260,22 @@ analyze_gene <- function(g, base, cancer, uni_cov_terms) {
   zph <- zph_rows(fit_u, gene, "univariable")
 
   # ---- 3. 다변량 Cox (EPV 확인 후 stage 변수 결정) ----
-  cov_terms <- unname(sapply(intersect(cfg$cox_covariates, c(names(d), "age")), model_term))
-  cov_terms <- intersect(cov_terms, names(d))
+  cov_terms <- intersect(unname(sapply(cfg$cox_covariates, model_term)), names(d))
   build <- function(terms) {
     dm <- complete_cases(d, terms)
     list(terms = terms, d = dm, events = sum(dm$status), k = n_params(dm, terms))
   }
   m <- build(c("group", cov_terms))
-  stage_used <- if ("stage" %in% cov_terms) "stage" else NA
-  if (m$events / m$k < cfg$epv_min && "stage" %in% cov_terms &&
+  stage_used <- if (cfg$stage_full %in% cov_terms) cfg$stage_full else NA
+  if (m$events / m$k < cfg$epv_min && cfg$stage_full %in% cov_terms &&
       cfg$stage_collapsed %in% names(d)) {
-    m <- build(c("group", replace(cov_terms, cov_terms == "stage", cfg$stage_collapsed)))
+    m <- build(c("group", replace(cov_terms, cov_terms == cfg$stage_full, cfg$stage_collapsed)))
     stage_used <- cfg$stage_collapsed
+  }
+  # 표시용 stage 수준 (예: "I–IV", "I–II vs III–IV")
+  stage_levels <- if (is.na(stage_used)) NA else {
+    lv <- levels(m$d[[stage_used]])
+    if (length(lv) == 2) paste(lv, collapse = " vs ") else paste0(lv[1], "–", lv[length(lv)])
   }
   epv <- m$events / m$k
   exploratory <- epv < cfg$epv_min
@@ -296,11 +306,10 @@ analyze_gene <- function(g, base, cancer, uni_cov_terms) {
                        if (exploratory) " (exploratory)" else "")),
     cancer, paste0("forest_multi_", gene), width = 9, height = 1.6 + 0.35 * nrow(multi)))
 
-  # ---- 4. 민감도 분석: strata(tss) ----
+  # ---- 4. 민감도 분석: strata(cfg$strata_var), 소수 수준은 cfg$collapse_small_levels로 병합 ----
   ds <- m$d
-  site_n <- table(ds$tss)
-  ds$tss_grp <- ifelse(ds$tss %in% names(site_n)[site_n >= cfg$tss_min_n], ds$tss, "Other")
-  fit_s <- fit_cox(ds, m$terms, strata = "tss_grp")
+  ds$strata_grp <- collapse_small(ds[[cfg$strata_var]], cfg$strata_var)
+  fit_s <- fit_cox(ds, m$terms, strata = "strata_grp")
   sg <- cox_rows(fit_s, ds, m$terms, term_labels(m$terms, gene))
   sg <- sg[sg$term == "group" & !sg$reference, ]
 
@@ -330,22 +339,22 @@ analyze_gene <- function(g, base, cancer, uni_cov_terms) {
   if (any(zph$flag & zph$term == "group")) {
     cut <- cfg$ph_split_months
     sp  <- survSplit(Surv(os_months, status) ~ ., data = m$d, cut = cut, episode = "period")
-    sp$high_early <- as.numeric(sp$group == "High" & sp$period == 1)
-    sp$high_late  <- as.numeric(sp$group == "High" & sp$period == 2)
-    rhs <- c("high_early", "high_late", setdiff(m$terms, "group"))
+    sp$alt_early <- as.numeric(sp$group == group_alt() & sp$period == 1)
+    sp$alt_late  <- as.numeric(sp$group == group_alt() & sp$period == 2)
+    rhs <- c("alt_early", "alt_late", setdiff(m$terms, "group"))
     fit_t <- coxph(as.formula(paste("Surv(tstart, os_months, status) ~", paste(rhs, collapse = " + "))),
                    data = sp)
     ci <- summary(fit_t)$conf.int
     co <- summary(fit_t)$coefficients
     ts <- data.frame(
-      hr_early = ci["high_early", 1], lo_early = ci["high_early", 3], hi_early = ci["high_early", 4],
-      p_early = co["high_early", "Pr(>|z|)"],
-      hr_late = ci["high_late", 1], lo_late = ci["high_late", 3], hi_late = ci["high_late", 4],
-      p_late = co["high_late", "Pr(>|z|)"])
+      hr_early = ci["alt_early", 1], lo_early = ci["alt_early", 3], hi_early = ci["alt_early", 4],
+      p_early = co["alt_early", "Pr(>|z|)"],
+      hr_late = ci["alt_late", 1], lo_late = ci["alt_late", 3], hi_late = ci["alt_late", 4],
+      p_late = co["alt_late", "Pr(>|z|)"])
     ev <- tapply(sp$status, list(sp$period, sp$group), sum)
-    cat(sprintf("           PH 위반 → 시간 분할 Cox (%d개월): 0–%d HR %s (사건 L%d/H%d), >%d HR %s (사건 L%d/H%d)\n",
-                cut, cut, fmt_hr(ts$hr_early, ts$lo_early, ts$hi_early), ev[1, "Low"], ev[1, "High"],
-                cut, fmt_hr(ts$hr_late, ts$lo_late, ts$hi_late), ev[2, "Low"], ev[2, "High"]))
+    cat(sprintf("           PH 위반 → 시간 분할 Cox (%d개월): 0–%d HR %s (사건 기준/비교 %d/%d), >%d HR %s (사건 기준/비교 %d/%d)\n",
+                cut, cut, fmt_hr(ts$hr_early, ts$lo_early, ts$hi_early), ev[1, group_ref()], ev[1, group_alt()],
+                cut, fmt_hr(ts$hr_late, ts$lo_late, ts$hi_late), ev[2, group_ref()], ev[2, group_alt()]))
   }
 
   # ---- 7. RMST 차이 (High − Low, 비례위험 가정 불필요) ----
@@ -357,7 +366,7 @@ analyze_gene <- function(g, base, cancer, uni_cov_terms) {
     tau_note <- paste0("RMST tau reduced to ", tau, " months (follow-up)")
     warning(cancer, " ", gene, ": 추적기간이 짧아 RMST tau를 ", tau, "개월로 줄임", call. = FALSE)
   }
-  rm <- survRM2::rmst2(d$os_months, d$status, as.numeric(d$group == "High"), tau = tau)
+  rm <- survRM2::rmst2(d$os_months, d$status, as.numeric(d$group == group_alt()), tau = tau)
   ur <- rm$unadjusted.result
   rd <- ur[grep("^RMST \\(arm=1\\)-\\(arm=0\\)", rownames(ur)), ]
   rmst <- data.frame(rmst_tau = tau,
@@ -373,7 +382,8 @@ analyze_gene <- function(g, base, cancer, uni_cov_terms) {
     multi_n = nrow(m$d), multi_dropped = dropped, multi_events = m$events,
     multi_hr = mg$hr, multi_lo = mg$lo, multi_hi = mg$hi, multi_p = mg$p,
     params = m$k, epv = epv, stage_var = stage_used, exploratory = exploratory,
-    tss_hr = sg$hr, tss_lo = sg$lo, tss_hi = sg$hi, tss_p = sg$p, tss_strata = length(unique(ds$tss_grp)),
+    strata_hr = sg$hr, strata_lo = sg$lo, strata_hi = sg$hi, strata_p = sg$p,
+    n_strata = length(unique(ds$strata_grp)), stage_levels = stage_levels,
     ph_global_p_uni = zph$p[zph$model == "univariable" & zph$term == "GLOBAL"],
     ph_global_p_multi = zph$p[zph$model == "multivariable" & zph$term == "GLOBAL"],
     ph_flag = any(zph$flag), note = tau_note
@@ -403,7 +413,7 @@ for (cancer in cfg$cancers) {
   cat("생존 정보 있는 환자", nrow(base), "명, 사건", sum(base$status), "건 / 유전자", length(genes), "개\n")
 
   # ---- 단변량 Cox: 임상 공변량 ----
-  uni_cov_terms <- unique(unname(sapply(c(cfg$cox_covariates, cfg$stage_collapsed), model_term)))
+  uni_cov_terms <- unique(unname(sapply(cfg$cox_uni_covariates, model_term)))
   missing_cov <- setdiff(uni_cov_terms, names(base))
   if (length(missing_cov)) cat("없는 공변량 (건너뜀):", paste(missing_cov, collapse = ", "), "\n")
   uni_cov_terms <- intersect(uni_cov_terms, names(base))
@@ -433,8 +443,8 @@ for (cancer in cfg$cancers) {
                     "logrank_p", "uni_hr", "uni_lo", "uni_hi", "uni_p",
                     "multi_n", "multi_dropped", "multi_events",
                     "multi_hr", "multi_lo", "multi_hi", "multi_p", "params", "epv",
-                    "stage_var", "exploratory", "tss_hr", "tss_lo", "tss_hi", "tss_p",
-                    "tss_strata", "ph_global_p_uni", "ph_global_p_multi", "ph_flag",
+                    "stage_var", "stage_levels", "exploratory", "strata_hr", "strata_lo", "strata_hi", "strata_p",
+                    "n_strata", "ph_global_p_uni", "ph_global_p_multi", "ph_flag",
                     "hr_early", "lo_early", "hi_early", "p_early",
                     "hr_late", "lo_late", "hi_late", "p_late",
                     "rmst_tau", "rmst_low", "rmst_high", "rmst_diff", "rmst_lo", "rmst_hi", "rmst_p",
@@ -465,10 +475,9 @@ for (cancer in cfg$cancers) {
     `Multivariable HR (95% CI)` = fmt_hr(s$multi_hr, s$multi_lo, s$multi_hi),
     `Multivariable p` = fmt_p(s$multi_p), `Multivariable q` = q_txt(s$multi_q),
     EPV = ifelse(is.na(s$epv), NA, sprintf("%.1f", s$epv)),
-    `Stage variable` = ifelse(s$stage_var %in% "stage", "I–IV",
-                              ifelse(s$stage_var %in% cfg$stage_collapsed, "I–II vs III–IV", s$stage_var)),
-    `Strata(TSS) HR (95% CI)` = fmt_hr(s$tss_hr, s$tss_lo, s$tss_hi),
-    `Strata(TSS) p` = fmt_p(s$tss_p),
+    `Stage variable` = s$stage_levels,
+    `Strata HR (95% CI)` = fmt_hr(s$strata_hr, s$strata_lo, s$strata_hi),
+    `Strata p` = fmt_p(s$strata_p),
     `PH global p` = fmt_p(s$ph_global_p_multi),
     check.names = FALSE
   )
@@ -479,13 +488,14 @@ for (cancer in cfg$cancers) {
   out[[paste0("RMST difference at ", cfg$rmst_tau, " mo, months (95% CI)")]] <-
     ifelse(is.na(s$rmst_diff), NA, sprintf("%.2f (%.2f, %.2f)", s$rmst_diff, s$rmst_lo, s$rmst_hi))
   out[["RMST p"]] <- fmt_p(s$rmst_p)
-  out[["Exploratory (EPV < 10)"]] <- s$exploratory
+  names(out) <- sub("^Strata ", paste0("Strata(", toupper(cfg$strata_var), ") "), names(out))
+  out[[paste0("Exploratory (EPV < ", cfg$epv_min, ")")]] <- s$exploratory
   out$Note <- s$note
   created <- c(created, save_df_table(
     out, cancer, "survival_summary", landscape = TRUE, font_size = 6,
     caption = paste0(
-      "Overall survival by gene expression (High vs Low), TCGA-", cancer,
-      ". HR from Cox regression; multivariable model adjusted for age (per 10 years), sex and pathologic stage. ",
+      "Overall survival by gene expression (", group_contrast_label(), "), TCGA-", cancer,
+      ". HR from Cox regression; multivariable model adjusted for ", adjust_text(), ". Sensitivity: stratified by ", cfg$strata_var, ". ",
       "q = Benjamini–Hochberg across exploratory genes only; the primary gene (", primary,
       ") is reported with its unadjusted p. Time-split HRs (0–", sc, " / >", sc,
       " months, adjusted) are shown only for genes whose expression term violated proportional hazards. ",
@@ -528,8 +538,8 @@ for (cancer in cfg$cancers) {
                       ifelse(fg$role == "primary", " [primary]", ""), fg$multi_n, fg$multi_events),
       hr = fg$multi_hr, lo = fg$multi_lo, hi = fg$multi_hi, p = fg$multi_p, reference = FALSE,
       shape = ifelse(fg$exploratory, "exploratory", "est"))
-    sub <- paste0("High vs Low expression; adjusted for age, sex and stage",
-                  if (any(fg$exploratory)) ". Open squares: exploratory (EPV < 10)" else "")
+    sub <- paste0(group_contrast_label(), " expression; adjusted for ", adjust_text(),
+                  if (any(fg$exploratory)) paste0(". Open squares: exploratory (EPV < ", cfg$epv_min, ")") else "")
     created <- c(created, save_fig(
       forest_plot(fg_tab, paste0("Multivariable Cox: gene expression — TCGA-", cancer), sub),
       cancer, "forest_genes", width = 9, height = 1.6 + 0.35 * nrow(fg_tab)))
@@ -558,7 +568,7 @@ for (cancer in names(console)) {
   }
   cat("  log-rank p < 0.05     :", if (length(lr)) paste(lr, collapse = ", ") else "없음", "\n")
   cat("  다변량 유전자 p < 0.05:", if (length(mv)) paste(mv, collapse = ", ") else "없음",
-      if (any(s$exploratory %in% TRUE)) "(일부/전체 탐색적, EPV < 10)" else "", "\n")
+      if (any(s$exploratory %in% TRUE)) paste0("(일부/전체 탐색적, EPV < ", cfg$epv_min, ")") else "", "\n")
 }
 if (length(failures)) {
   cat("\n실패한 분석 (", length(failures), "개):\n", paste0("  ", failures, collapse = "\n"), "\n", sep = "")

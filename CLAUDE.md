@@ -18,10 +18,14 @@ R 4.6.1 is not on PATH. Use `"C:/Program Files/R/R-4.6.1/bin/Rscript.exe" <scrip
 02b_merge_genes.R       # database/gene_files/*.csv → data/processed/<C>_merged.{rds,csv,sav} + merge_QC
 03_table1.R             # table1_<GENE>.{docx,csv}, table1_overall, tss_by_group_<GENE>.csv
 04_survival.R           # KM, Cox, strata(tss), cox.zph, time-split Cox, RMST, BH q, forest plots
-05_gsea.R               # DESeq2 High vs Low (~ tss + group) + fgsea on MSigDB; needs 02a outputs and Bioconductor packages
+05_gsea.R [COAD]        # DESeq2 High vs Low (~ tss + group) + fgsea on MSigDB; needs 02a outputs; run one cancer per process
 ```
 - Not written yet: `06_external_geo.R` (GSE39582). `07_timer` and `08_proteomics` are optional.
-- 05 is slow: DESeq2 runs twice, plus apeglm and GO:BP fgsea. By default it runs only `cfg$primary_gene`; `cfg$gsea_genes = "all"` runs every gene. Run it in the background.
+- **05 memory and speed:** DESeq2 runs twice, plus apeglm and GO:BP fgsea, taking about 10–15 minutes for COAD.
+  - Run one cancer per process: `Rscript 05_gsea.R COAD`, then `Rscript 05_gsea.R READ`. A command-line argument overrides `cfg$cancers`.
+  - Keep `n_cores` at 2: each Windows SnowParam worker holds its own copy of the data. A 4-worker run of both cancers in one process was killed for low memory.
+  - 05 frees `dds`/`vst` and calls `gc()` after each gene and each cancer.
+  - By default only `cfg$primary_gene` runs; `cfg$gsea_genes = "all"` runs every gene.
 - **There is no test suite.** Correctness comes from built-in stops:
   - `validate_schema()` and `check_label_consistency()` in 01
   - the manifest check in 01
@@ -38,9 +42,10 @@ R 4.6.1 is not on PATH. Use `"C:/Program Files/R/R-4.6.1/bin/Rscript.exe" <scrip
   - schema: `schema_default` plus per-cancer overrides in `cfg$schema$<C>`
   - labels: per-cancer overrides in `cfg$value_labels$<C>` and `cfg$label_rules$<C>`
   - Table 1: `table1_vars`
-  - survival: `cox_covariates`, `stage_collapsed`, `epv_min`, `min_events`, `tss_min_n`, `km_times`, `ph_split_months`, `rmst_tau`
+  - covariates, strata, reference levels and exclusions: see **Covariates** below
+  - survival: `km_times`, `ph_split_months`, `rmst_tau`
   - figures: `group_colors`
-  - GSEA: `gsea_genes`, `gsea_design_covariates`, `gsea_extra_collections`, `gsea_highlight`, `gsea_size`, `n_cores`, `seed`
+  - GSEA: `gsea_genes`, `gsea_design_covariates`, `gsea_sensitivity_covariates`, `gsea_extra_collections`, `gsea_highlight`, `gsea_c8_pattern`, `gsea_enrichment_top`, `gsea_size`, `n_cores`, `seed`
 - **`R/utils.R`** holds all shared logic. Every script starts with `source("config.R"); source("R/utils.R")`, loops over `cfg$cancers`, and finds genes with `detect_genes()` (stems that have both `_expression` and `_group` columns). Don't hardcode cancer codes, genes or patient IDs.
 - **Schema → canonical columns:** source column names live only in the schema. `apply_schema_names()` renames the schema columns to the canonical names in `canon`:
 
@@ -101,7 +106,43 @@ R 4.6.1 is not on PATH. Use `"C:/Program Files/R/R-4.6.1/bin/Rscript.exe" <scrip
   - `output/tables/<C>/gsea/<GENE>/`: `de_results.csv`, `gsea_<Hallmark|Reactome|KEGG|GOBP|C8>.csv`, `gsea_QC.csv`, `gsea_summary.{docx,csv}`
   - `output/figures/<C>/gsea/<GENE>/`: `volcano`, `pca`, `nes_<collection>`, `enrichment_<PATHWAY>`
   - `data/processed/<C>_dds_<GENE>.rds`
+- **05 figures:**
+  - Enrichment plots cover:
+    - the top `gsea_enrichment_top` Hallmark pathways by padj (significant only)
+    - every `gsea_highlight` pathway
+    - the top C8 cell-type sets matching `gsea_c8_pattern` (default B cells / plasma cells, significant only)
+  - `gsea_summary` lists the Hallmark top 5 up and top 5 down by NES, and the top 10 by padj for the other collections.
+  - apeglm optimizer warnings are suppressed, and the number suppressed is printed.
+- **PCA bug (fixed):** with two `intgroup` variables, `DESeq2::plotPCA()` overwrites the `group` column with their interaction ("Low:AF"), so the group panel came out grey. `pca_plot()` passes only `intgroup = "group"` and adds the second colour variable from `colData`. PCA figures made before this fix were wrong.
 - **msigdbr 26.x** uses `collection` / `subcollection` (not `category`), and its data download on first use. KEGG uses `CP:KEGG_LEGACY`, falling back to `CP:KEGG_MEDICUS`.
+
+## Covariates
+Every covariate, stratum, reference level, adjustment and exclusion is read from `config.R`. Nothing is hardcoded in 01–05 or `R/utils.R`: an audit grep for `"Low"`, `"High"`, `"Male"`, `/ 10`, `"tss"`, `"Other"`, `"stage"`, `"yes"` and `~ group` finds only structural schema field names and the KM/log-rank formula `~ group`. Keep it that way; add new settings here and to this table.
+
+| Key | Default | Used in | Controls |
+|---|---|---|---|
+| `exclude_neoadjuvant` | `TRUE` | 01, 02b (→ 03–05) | Drop neoadjuvant-treated patients. The manifest stores counts both with and without them. |
+| `schema$neoadjuvant`, `schema$neoadjuvant_yes` | `"history_neoadjuvant_treatment"`, `"Yes"` | utils `recode_clinical` (01) | Which column and which value (case-insensitive) set `neoadjuvant_flag` |
+| `group_levels` | `c("Low", "High")` | utils, 01–05 | Exposure levels: the 1st is the **reference**, the 2nd is the comparison (above median). Sets the 0/1 mapping (1 = 2nd level), factor order, Cox/KM reference, RMST and time-split arm, DESeq2 contrast and apeglm coefficient, and plot labels. |
+| `reference_levels` | `gender = "Male"`, `pathologic_stage = "I"`, `stage = "I"`, `pathologic_stage_12_34 = "I–II"` | utils `apply_reference_levels` (01) → 03, 04 | Reference level of each categorical covariate |
+| `cox_covariates` | `c("age", "gender", "stage")` | 04 | Multivariable Cox adjustment; also the adjustment in the strata(TSS) and time-split models, and the caption text |
+| `cox_uni_covariates` | `c("age", "gender", "stage", "pathologic_stage_12_34")` | 04 | Covariates in the univariable Cox table |
+| `covariate_scale` | `age = list(by = 10, label = "Age (per 10 years)")` | 04 (via utils `add_scaled_terms`) | Unit of continuous covariates in Cox; the model term becomes `age_per10` |
+| `stage_full`, `stage_collapsed` | `"stage"`, `"pathologic_stage_12_34"` | 04; utils (creates the collapsed column if it's missing) | Stage term that is swapped for the collapsed one when EPV < `epv_min` |
+| `epv_min` | `10` | 04 | EPV threshold for collapsing stage, then for the exploratory flag |
+| `min_events` | `10` | 04 | Genes with fewer events are skipped |
+| `strata_var` | `"tss"` | 03 (`<strata_var>_by_group_*.csv`), 04 (`strata()` sensitivity) | Stratification / site variable |
+| `tss_barcode_pos` | `c(6, 7)` | utils (01) | Characters of `sample_id` used for `tss` |
+| `collapse_small_levels`, `collapse_other_label` | `c(tss = 10)`, `"Other"` | 04 (strata), 05 (design), via utils `collapse_small` | Levels with fewer patients than this are merged into "Other" |
+| `gsea_design_covariates` | `c("tss")` | 05 | Main DESeq2 design `~ <covariates> + group`; the first one also colours the 2nd PCA panel |
+| `gsea_sensitivity_covariates` | `character()` | 05 | Sensitivity design (default `~ group`), which defines `robust_no_covariate` |
+| `table1_vars`, `table1_continuous` | 15 clinical variables; `"age"` | 03 | Table 1 rows; which of them are summarized as median [IQR] with Wilcoxon |
+| `value_labels_default`, `label_rules_default` (+ `value_labels$<C>`, `label_rules$<C>`) | stage I–IV, stage I–II/III–IV, CEA ≤5/>5, age ≤65/≥66 | utils (01) | Code → label mapping and consistency cutoffs for derived covariates |
+| `drop_columns` | `"rock2g_01"` | utils (01) | Duplicate columns removed on import |
+
+**Unadjusted by design:** KM and log-rank, RMST, univariable Cox, Table 1 tests, and the `<strata_var>` × group crosstab.
+
+**Changing covariates:** edit only `config.R`, then rerun 01 → 04. The manifest guards patient counts. Confirm that the forest plots and `cox_multi_*` show the intended terms and reference rows. Changing `group_levels` also changes which group the HRs and log2FC are relative to.
 
 ## Data rules agreed with the user (don't change silently)
 - **Survival** comes from the schema's time and status (currently `Days`/`Status`, 1 = death). `os_months = days / 30.44`. Reference counts, now stored in the manifest:
@@ -113,12 +154,17 @@ R 4.6.1 is not on PATH. Use `"C:/Program Files/R/R-4.6.1/bin/Rscript.exe" <scrip
 - **`database/` is read-only input.** The user edits the .sav files between sessions, so re-inspect them rather than assuming their structure.
 - **Expression groups:** `*_group` values from the .sav are never recomputed. `median_split()` is only for new genes that come without a group. The median QC allows a difference of 1 patient.
 - **Indicator columns** (`kras_/braf_gene_analysis_indicator`, `mismatch_rep_proteins_tested_by_ihc`) mean a test was **performed**. They are not mutation or MMR results. Never derive mutation/MSI/MMR variables from them. They are also excluded from Table 1.
-- **Codes and consistency rules** (`label_rules_default`; a mismatch stops the run):
+- **MSI/MMR status: pending.** Neither .sav has an MSI or MMR result column, so MSI is not a covariate in any model yet. If the user supplies one, add it through the schema or a data column. Then:
+  - add it to `cox_covariates` (check EPV; READ is already below 10)
+  - add it to `table1_vars`
+  - consider it for `gsea_design_covariates`
+  - rerun 01 → 05
+- **Codes and consistency rules** (`cfg$label_rules_default` in config.R; a mismatch stops the run):
   - `cea_g`: 0 = ≤5 ng/mL, 1 = >5; checked against `cea_level_pretreatment > 5`
   - `age_g`: ≤65 / ≥66; checked against `age > 65`
   - `pathologic_stage_12_34`: 0 = I–II, 1 = III–IV; checked against `stage > 2`
 - **Cox models:**
-  - The multivariable model is the gene group + age (per 10 years) + gender + stage, as a complete-case analysis.
+  - The multivariable model is the gene group + `cox_covariates` (age per 10 years, gender, stage), as a complete-case analysis.
   - EPV = events / number of parameters. If EPV < `epv_min`, `stage_12_34` replaces stage I–IV. If EPV is still low, the result is `exploratory = TRUE`; all READ models are (EPV about 5.8).
   - Sensitivity analysis: `strata(tss)`, with sites under 10 patients grouped as "Other". The expression group is strongly associated with TSS for many genes (`tss_by_group_*.csv`), so report this analysis.
 - **PH violations:**
@@ -129,9 +175,21 @@ R 4.6.1 is not on PATH. Use `"C:/Program Files/R/R-4.6.1/bin/Rscript.exe" <scrip
 - **Reference results** (checked against independent code):
   - COAD MS4A1: log-rank p 0.018; multivariable HR 0.55 (0.35–0.85), p 0.007; strata(TSS) HR 0.50; RMST difference 4.88 months
   - READ MS4A1: log-rank p 0.008; RMST difference 9.11 months
+  - 05 GSEA (full run, each cancer in its own process, no failures or warnings):
+    - MS4A1 ranks 1st of all tested genes in both cancers (COAD 17,748, log2FC 4.09; READ 18,089, log2FC 3.64).
+    - Significant pathways (padj < 0.05), with the number still significant in the no-covariate run in brackets:
+
+      | | Hallmark | Reactome | KEGG | GO:BP | C8 |
+      |---|---|---|---|---|---|
+      | COAD | 30 (29) | 412 (373) | 72 (65) | 1288 (1243) | 483 (471) |
+      | READ | 28 (27) | 336 (315) | 54 (49) | 790 (742) | 384 (354) |
+
+    - Up in High: allograft rejection, IFN-γ response, inflammatory response.
+    - Up in Low: MYC targets, oxidative phosphorylation, E2F, G2M.
+    - The PCA group panel is coloured correctly (COAD 218/218, READ 79/78).
 - **GSEA (05):**
   - Use the existing `<gene>_group` from the merged data (the same patients and grouping as survival). Never re-split.
-  - Main design: `~ tss + group`, with sites under `tss_min_n` patients grouped as "Other" (groups are unbalanced across sites). Contrast: High vs Low.
+  - Main design: `~ tss + group`, with sites under `collapse_small_levels["tss"]` patients grouped as "Other" (groups are unbalanced across sites). Contrast: `group_levels[2]` vs `group_levels[1]` (High vs Low).
   - Pre-filter: keep genes with count ≥ 10 in at least as many samples as the smaller group.
   - Rank by the DESeq2 Wald stat, remap symbols with the `.chip` file, and average duplicates.
   - `fgseaMultilevel` with minSize 15, maxSize 500, eps 0 and a fixed seed.

@@ -2,8 +2,8 @@
 # 05_gsea.R
 # 발현 그룹(High vs Low)별 차등발현(DESeq2) + GSEA(fgsea, MSigDB)
 #   - 그룹: merged 데이터의 기존 <gene>_group 그대로 사용 (생존분석과 동일, 재분할 없음)
-#   - 주 design: ~ <cfg$gsea_design_covariates> + group  (기본 tss; 소수 기관은 "Other")
-#   - 민감도: ~ group (공변량 없음) → GSEA 방향/유의성 유지 여부 (robust_no_covariate)
+#   - 주 design: ~ <cfg$gsea_design_covariates> + group  (소수 수준은 cfg$collapse_small_levels로 병합)
+#   - 민감도: ~ <cfg$gsea_sensitivity_covariates> + group (기본: 공변량 없음) → robust_no_covariate
 #   - 순위: DESeq2 Wald stat → MSigDB .chip으로 옛 기호 재매핑 → 중복 평균
 # 입력: data/processed/<C>_counts.rds (02a), <C>_merged.rds, database/TCGA_<C>_RNAseq_Expression.csv
 # 결과: output/tables/<C>/gsea/<GENE>/  de_results.csv, gsea_<collection>.csv, gsea_QC.csv, gsea_summary
@@ -21,8 +21,19 @@ suppressPackageStartupMessages({
   library(patchwork)
 })
 
+# 암종 하나만 실행: Rscript 05_gsea.R COAD  (명령줄 인수가 cfg$cancers보다 우선)
+# 메모리 절약을 위해 암종마다 별도 프로세스로 실행 권장
+args <- toupper(commandArgs(trailingOnly = TRUE))
+if (length(args)) {
+  bad <- setdiff(args, cfg$cancers)
+  if (length(bad)) stop("알 수 없는 암종: ", paste(bad, collapse = ", "), " (cfg$cancers: ",
+                        paste(cfg$cancers, collapse = ", "), ")")
+  cfg$cancers <- args
+  cat("명령줄 지정 암종만 실행:", paste(args, collapse = ", "), "\n")
+}
+
 set.seed(cfg$seed)
-bp <- if (.Platform$OS.type == "windows") {
+bp <-if (.Platform$OS.type == "windows") {
   SnowParam(workers = cfg$n_cores, RNGseed = cfg$seed)
 } else {
   MulticoreParam(workers = cfg$n_cores, RNGseed = cfg$seed)
@@ -73,15 +84,11 @@ genes_to_run <- function(all_genes) {
   intersect(keys, all_genes)
 }
 
-# 설계 공변량 준비 (tss는 소수 기관을 "Other"로 병합)
+# 설계 공변량 준비 (cfg$collapse_small_levels에 있는 변수는 소수 수준 병합)
 prepare_coldata <- function(d, covs) {
-  cd <- data.frame(row.names = d$sample_id, group = factor(d$group, levels = c("Low", "High")))
+  cd <- data.frame(row.names = d$sample_id, group = factor(d$group, levels = cfg$group_levels))
   for (v in covs) {
-    x <- d[[v]]
-    if (v == "tss") {
-      n <- table(x)
-      x <- ifelse(x %in% names(n)[n >= cfg$tss_min_n], x, "Other")
-    }
+    x <- collapse_small(d[[v]], v)
     cd[[v]] <- if (is.numeric(x)) x else factor(x)
   }
   cd
@@ -130,8 +137,8 @@ norm_name <- function(x) gsub("[^A-Z0-9]", "", toupper(x))
 
 volcano_plot <- function(de, gene, cancer) {
   de$y   <- -log10(pmax(de$padj, 1e-300))
-  de$dir <- ifelse(de$padj < 0.05 & de$log2FC_shrunk > 0, "High",
-                   ifelse(de$padj < 0.05 & de$log2FC_shrunk < 0, "Low", "NS"))
+  de$dir <- ifelse(de$padj < 0.05 & de$log2FC_shrunk > 0, group_alt(),
+                   ifelse(de$padj < 0.05 & de$log2FC_shrunk < 0, group_ref(), "NS"))
   lab <- head(de[order(de$padj), ], 15)
   lab <- unique(rbind(lab, de[de$symbol == gene, ]))
   ggplot(de[!is.na(de$padj), ], aes(log2FC_shrunk, y, colour = dir)) +
@@ -139,26 +146,30 @@ volcano_plot <- function(de, gene, cancer) {
     geom_hline(yintercept = -log10(0.05), linetype = "dashed", colour = "grey50") +
     ggrepel::geom_text_repel(data = lab, aes(label = symbol), size = 3, colour = "black",
                              max.overlaps = 30, min.segment.length = 0) +
-    scale_colour_manual(values = c(High = cfg$group_colors[["High"]], Low = cfg$group_colors[["Low"]],
-                                   NS = "grey75"),
-                        labels = c(High = "Up in High", Low = "Up in Low", NS = "NS"), name = NULL) +
-    labs(x = "log2 fold change (High vs Low, apeglm-shrunken)", y = expression(-log[10]~"adjusted p"),
-         title = paste0(gene, " High vs Low — TCGA-", cancer)) +
+    scale_colour_manual(values = c(cfg$group_colors[cfg$group_levels], NS = "grey75"),
+                        labels = c(setNames(paste("Up in", cfg$group_levels), cfg$group_levels), NS = "NS"),
+                        name = NULL) +
+    labs(x = paste0("log2 fold change (", group_contrast_label(), ", apeglm-shrunken)"), y = expression(-log[10]~"adjusted p"),
+         title = paste0(gene, " ", group_contrast_label(), " — TCGA-", cancer)) +
     theme_classic(base_size = 11) + theme(legend.position = "top")
 }
 
 pca_plot <- function(dds, gene, cancer) {
   vsd <- vst(dds, blind = TRUE)
-  pc  <- plotPCA(vsd, intgroup = intersect(c("group", "tss"), names(colData(dds))), returnData = TRUE)
+  extra <- intersect(cfg$gsea_design_covariates, names(colData(dds)))[1]   # 두 번째 패널 색 (기본 tss)
+  # intgroup이 2개 이상이면 plotPCA가 group 열을 상호작용("Low:AF")으로 덮어쓰므로 group만 넘기고
+  # 두 번째 색 변수는 colData에서 직접 가져옴
+  pc  <- plotPCA(vsd, intgroup = "group", returnData = TRUE)
+  if (!is.na(extra)) pc[[extra]] <- colData(vsd)[[extra]]
   pv  <- round(100 * attr(pc, "percentVar"))
   base <- ggplot(pc, aes(PC1, PC2)) +
     labs(x = paste0("PC1 (", pv[1], "%)"), y = paste0("PC2 (", pv[2], "%)")) +
     theme_classic(base_size = 10)
   p1 <- base + geom_point(aes(colour = group), size = 1.2, alpha = 0.8) +
     scale_colour_manual(values = cfg$group_colors, name = paste(gene, "expression"))
-  if (!"tss" %in% names(pc)) return(p1 + labs(title = paste0("PCA (vst) — TCGA-", cancer)))
-  p2 <- base + geom_point(aes(colour = tss), size = 1.2, alpha = 0.8) +
-    labs(colour = "Tissue source site")
+  if (is.na(extra)) return(p1 + labs(title = paste0("PCA (vst) — TCGA-", cancer)))
+  p2 <- base + geom_point(aes(colour = .data[[extra]]), size = 1.2, alpha = 0.8) +
+    labs(colour = if (extra %in% names(var_labels)) var_labels[[extra]] else extra)
   (p1 | p2) + plot_annotation(title = paste0("PCA of variance-stabilized expression — TCGA-", cancer))
 }
 
@@ -174,24 +185,23 @@ nes_plot <- function(tab, coll, gene, cancer) {
     sub <- "No pathway with padj < 0.05; top 10 up / down by NES shown"
   }
   top$label <- pretty_pathway(top$pathway)
-  top$dir   <- ifelse(top$NES > 0, "High", "Low")
+  top$dir   <- ifelse(top$NES > 0, group_alt(), group_ref())
   top$padj_txt <- ifelse(top$padj < 0.001, "<0.001", sprintf("%.3f", top$padj))
   ggplot(top, aes(NES, reorder(label, NES), fill = dir)) +
     geom_col(width = 0.7) +
     geom_vline(xintercept = 0, colour = "grey30") +
     geom_text(aes(label = padj_txt, hjust = ifelse(NES > 0, -0.15, 1.15)), size = 2.7) +
     scale_fill_manual(values = cfg$group_colors,
-                      labels = c(High = paste("Enriched in", gene, "High"),
-                                 Low = paste("Enriched in", gene, "Low")), name = NULL) +
+                      labels = setNames(paste("Enriched in", gene, cfg$group_levels), cfg$group_levels), name = NULL) +
     scale_x_continuous(expand = expansion(mult = 0.18)) +
     labs(x = "Normalized enrichment score (NES); label = adjusted p", y = NULL,
-         title = paste0(coll, " — ", gene, " High vs Low, TCGA-", cancer), subtitle = sub) +
+         title = paste0(coll, " — ", gene, " ", group_contrast_label(), ", TCGA-", cancer), subtitle = sub) +
     theme_classic(base_size = 9) + theme(legend.position = "top")
 }
 
 enrichment_plot <- function(genes, ranks, row, coll) {
   d <- plotEnrichmentData(genes, ranks)
-  col <- if (row$NES > 0) cfg$group_colors[["High"]] else cfg$group_colors[["Low"]]
+  col <- if (row$NES > 0) cfg$group_colors[[group_alt()]] else cfg$group_colors[[group_ref()]]
   tick_h <- d$spreadES / 16
   ggplot(d$curve, aes(rank, ES)) +
     geom_hline(yintercept = 0, colour = "grey40") +
@@ -199,7 +209,7 @@ enrichment_plot <- function(genes, ranks, row, coll) {
     geom_segment(data = d$ticks, aes(x = rank, xend = rank, y = -tick_h, yend = tick_h),
                  inherit.aes = FALSE, linewidth = 0.2) +
     geom_line(colour = col, linewidth = 0.9) +
-    labs(x = "Gene rank (left: up in High, right: up in Low)", y = "Enrichment score",
+    labs(x = paste0("Gene rank (left: up in ", group_alt(), ", right: up in ", group_ref(), ")"), y = "Enrichment score",
          title = pretty_pathway(row$pathway, 90),
          subtitle = sprintf("%s | NES = %.2f, padj = %s, size = %d", coll, row$NES, fmt_p(row$padj), row$size)) +
     theme_classic(base_size = 10)
@@ -232,13 +242,13 @@ analyze_gene <- function(g, cancer, cnt, merged, gdc_expr) {
   d  <- d[match(ids, d$sample_id), ]
   cd <- prepare_coldata(d, covs)
   n_grp <- table(cd$group)
-  cat(sprintf("           그룹 Low %d / High %d%s\n", n_grp[["Low"]], n_grp[["High"]],
-              if ("tss" %in% covs) paste0(", tss ", nlevels(cd$tss), "개 수준") else ""))
+  cat(sprintf("           그룹 %s %d / %s %d%s\n", group_ref(), n_grp[[group_ref()]], group_alt(), n_grp[[group_alt()]],
+              paste0(vapply(covs, function(v) sprintf(", %s %d개 수준", v, length(unique(cd[[v]]))), ""), collapse = "")))
 
   # ---- QC: GDC 발현 vs .sav 발현 ----
   qc <- data.frame(gene = gene, cancer = cancer, n_matched = length(ids),
                    n_only_clinical = length(only_merged), n_only_counts = length(only_counts),
-                   n_low = n_grp[["Low"]], n_high = n_grp[["High"]])
+                   n_low = n_grp[[group_ref()]], n_high = n_grp[[group_alt()]])
   if (!is.null(gdc_expr) && gene %in% rownames(gdc_expr)) {
     x_gdc <- gdc_expr[gene, ids]
     x_sav <- d[[paste0(g, "_expression")]]
@@ -259,10 +269,16 @@ analyze_gene <- function(g, cancer, cnt, merged, gdc_expr) {
   # ---- DESeq2: 주 설계 + 공변량 없는 민감도 ----
   t0 <- Sys.time()
   dds <- run_deseq(cnt[, ids], cd, covs)
-  res <- results(dds, contrast = c("group", "High", "Low"), parallel = TRUE, BPPARAM = bp)
-  shr <- lfcShrink(dds, coef = "group_High_vs_Low", type = "apeglm", parallel = TRUE, BPPARAM = bp, quiet = TRUE)
-  cat(sprintf("           DESeq2 (~ %s): %d개 유전자, %.1f분\n", paste(c(covs, "group"), collapse = " + "),
-              nrow(dds), as.numeric(difftime(Sys.time(), t0, units = "mins"))))
+  res <- results(dds, contrast = c("group", group_alt(), group_ref()), parallel = TRUE, BPPARAM = bp)
+  # apeglm은 일부 유전자에서 최적화 경고를 반복 출력 → 억제하고 개수만 보고 (결과에는 영향 없음)
+  n_apeglm_warn <- 0
+  shr <- withCallingHandlers(
+    lfcShrink(dds, coef = paste0("group_", group_alt(), "_vs_", group_ref()), type = "apeglm",
+              parallel = TRUE, BPPARAM = bp, quiet = TRUE),
+    warning = function(w) { n_apeglm_warn <<- n_apeglm_warn + 1; invokeRestart("muffleWarning") })
+  cat(sprintf("           DESeq2 (~ %s): %d개 유전자, %.1f분%s\n", paste(c(covs, "group"), collapse = " + "),
+              nrow(dds), as.numeric(difftime(Sys.time(), t0, units = "mins")),
+              if (n_apeglm_warn) sprintf(" (apeglm 경고 %d건 억제)", n_apeglm_warn) else ""))
   saveRDS(dds, processed_path(cancer, paste0("dds_", gene, ".rds")))
 
   de <- data.frame(symbol = rownames(res), baseMean = res$baseMean, log2FC = res$log2FoldChange,
@@ -270,6 +286,11 @@ analyze_gene <- function(g, cancer, cnt, merged, gdc_expr) {
                    log2FC_shrunk = shr$log2FoldChange)
   de <- de[order(de$pvalue), ]
   files <- c(files, save_table(de, cancer, "de_results.csv", sub))
+
+  # PCA는 dds가 필요하므로 여기서 그리고 dds/vst를 바로 해제 (메모리)
+  files <- c(files, save_fig(pca_plot(dds, gene, cancer), cancer, "pca", 12, 5, subdir = sub))
+  rm(dds, shr)
+  gc(verbose = FALSE)
 
   # 기준 유전자 자체는 High에서 강하게 증가해야 함
   rk  <- rank(-de$stat, ties.method = "min", na.last = "keep")
@@ -286,9 +307,13 @@ analyze_gene <- function(g, cancer, cnt, merged, gdc_expr) {
   qc$n_de_padj05 <- sum(de$padj < 0.05, na.rm = TRUE)
 
   t0 <- Sys.time()
-  dds0 <- run_deseq(cnt[, ids], cd["group"], character())
-  res0 <- results(dds0, contrast = c("group", "High", "Low"), parallel = TRUE, BPPARAM = bp)
-  cat(sprintf("           DESeq2 민감도 (~ group): %.1f분\n", as.numeric(difftime(Sys.time(), t0, units = "mins"))))
+  covs0 <- intersect(cfg$gsea_sensitivity_covariates, names(cd))
+  dds0 <- run_deseq(cnt[, ids], cd[c(covs0, "group")], covs0)
+  res0 <- results(dds0, contrast = c("group", group_alt(), group_ref()), parallel = TRUE, BPPARAM = bp)
+  cat(sprintf("           DESeq2 민감도 (~ %s): %.1f분\n", paste(c(covs0, "group"), collapse = " + "),
+              as.numeric(difftime(Sys.time(), t0, units = "mins"))))
+  rm(dds0)
+  gc(verbose = FALSE)
 
   # ---- 순위 ----
   ranks  <- make_ranks(res)
@@ -333,16 +358,25 @@ analyze_gene <- function(g, cancer, cnt, merged, gdc_expr) {
   }
   allr <- do.call(rbind, all_res)
 
-  # ---- 그림: volcano, PCA, enrichment ----
+  # ---- 그림: volcano, enrichment ----
   files <- c(files, save_fig(volcano_plot(de, gene, cancer), cancer, "volcano", 7, 6.5, subdir = sub))
-  files <- c(files, save_fig(pca_plot(dds, gene, cancer), cancer, "pca", 12, 5, subdir = sub))
 
-  sig_all <- allr[allr$padj < 0.05, ]
-  top5 <- head(sig_all[order(sig_all$padj, -abs(sig_all$NES)), "pathway"], 5)
+  # enrichment plot 대상: Hallmark 유의 상위 N (padj 순) + gsea_highlight + C8 중 gsea_c8_pattern 유의 상위 N
+  n_top <- cfg$gsea_enrichment_top
+  top_sig <- function(t) {
+    s <- t[!is.na(t$padj) & t$padj < 0.05, ]
+    head(s$pathway[order(s$padj, -abs(s$NES))], n_top)
+  }
+  top_h  <- if (!is.null(all_res$Hallmark)) top_sig(all_res$Hallmark) else character()
+  top_c8 <- if (!is.null(all_res$C8) && nzchar(cfg$gsea_c8_pattern %||% "")) {
+    top_sig(all_res$C8[grepl(cfg$gsea_c8_pattern, all_res$C8$pathway), ])
+  } else character()
   hl <- allr$pathway[norm_name(allr$pathway) %in% norm_name(cfg$gsea_highlight)]
   miss_hl <- cfg$gsea_highlight[!norm_name(cfg$gsea_highlight) %in% norm_name(allr$pathway)]
   if (length(miss_hl)) cat("           강조 경로 중 결과에 없음:", paste(miss_hl, collapse = ", "), "\n")
-  for (pw in unique(c(top5, hl))) {
+  cat(sprintf("           enrichment plot: Hallmark %d, 강조 %d, C8 (%s) %d\n",
+              length(top_h), length(hl), cfg$gsea_c8_pattern, length(top_c8)))
+  for (pw in unique(c(top_h, hl, top_c8))) {
     row  <- allr[allr$pathway == pw, ][1, ]
     genes <- gene_sets[[row$collection]][[pw]]
     files <- c(files, save_fig(enrichment_plot(genes, ranks, row, row$collection), cancer,
@@ -350,9 +384,16 @@ analyze_gene <- function(g, cancer, cnt, merged, gdc_expr) {
   }
 
   # ---- 요약 표 ----
+  # Hallmark: 유의 경로 중 NES 상위 5 (High 쪽) + 하위 5 (Low 쪽); 나머지 컬렉션: padj 상위 10
+  hallmark_updown <- function(t, n = 5) {
+    s  <- t[!is.na(t$padj) & t$padj < 0.05, ]
+    up <- s[s$NES > 0, ]
+    dn <- s[s$NES < 0, ]
+    rbind(head(up[order(-up$NES), ], n), head(dn[order(dn$NES), ], n))
+  }
   summ <- do.call(rbind, lapply(names(gene_sets), function(coll) {
     t <- all_res[[coll]]
-    t <- head(t[t$padj < 0.05, ], 10)
+    t <- if (coll == "Hallmark") hallmark_updown(t) else head(t[t$padj < 0.05, ], 10)
     if (!nrow(t)) return(NULL)
     le <- vapply(strsplit(t$leading_edge, ";"), function(x) paste(head(x, 10), collapse = ", "), "")
     data.frame(Collection = coll, Pathway = t$pathway, Size = t$size, NES = sprintf("%.2f", t$NES),
@@ -362,17 +403,22 @@ analyze_gene <- function(g, cancer, cnt, merged, gdc_expr) {
   if (is.null(summ)) summ <- data.frame(Collection = names(gene_sets), Pathway = "No pathway with padj < 0.05")
   files <- c(files, save_df_table(
     summ, cancer, "gsea_summary", landscape = TRUE, font_size = 7, subdir = sub,
-    caption = paste0("GSEA of ", gene, " High vs Low expression, TCGA-", cancer,
+    caption = paste0("GSEA of ", gene, " ", group_contrast_label(), " expression, TCGA-", cancer,
                      " (DESeq2 Wald statistic, design ~ ", paste(c(covs, "group"), collapse = " + "),
-                     "). Top 10 pathways per collection with padj < 0.05. Positive NES = enriched in High. ",
-                     "Robust = same direction and padj < 0.05 without covariates.")))
+                     "). Hallmark: top 5 up and top 5 down by NES; other collections: top 10 by padj; ",
+                     "all padj < 0.05. Positive NES = enriched in ", group_alt(), ". ",
+                     "Robust = same direction and padj < 0.05 with design ~ ",
+                     paste(c(cfg$gsea_sensitivity_covariates, "group"), collapse = " + "), ".")))
   files <- c(files, save_table(qc, cancer, "gsea_QC.csv", sub))
   move_stale_outputs(cancer, NULL, files, subdir = sub)
 
   list(files = files,
        summary = list(gene = gene,
                       n_sig = vapply(all_res, function(t) sum(t$padj < 0.05, na.rm = TRUE), numeric(1)),
-                      hallmark = head(all_res$Hallmark[order(-all_res$Hallmark$NES), ], 5)))
+                      n_robust = vapply(all_res, function(t) sum(t$robust_no_covariate %in% TRUE), numeric(1)),
+                      rank = qc$gene_rank, n_tested = qc$n_genes_tested,
+                      hallmark_up = head(all_res$Hallmark[order(-all_res$Hallmark$NES), ], 5),
+                      hallmark_down = head(all_res$Hallmark[order(all_res$Hallmark$NES), ], 5)))
 }
 
 # ---- 실행 ---------------------------------------------------------------
@@ -417,6 +463,8 @@ for (cancer in cfg$cancers) {
   # 이번 실행 대상이 아닌 유전자의 이전 GSEA 폴더 → gsea/_stale/
   move_stale_dirs(cancer, "gsea", toupper(genes))
   console[[cancer]] <- results
+  rm(cnt, merged, gdc_expr)
+  gc(verbose = FALSE)
 }
 
 bpstop(bp)
@@ -426,11 +474,15 @@ cat("\n생성된 파일 (", length(created), "개):\n", paste0("  ", created, co
 cat("\n===== 요약 =====\n")
 for (cancer in names(console)) {
   for (r in console[[cancer]]) {
-    cat(cancer, r$gene, "\n")
-    cat("  padj < 0.05 경로 수:", paste(sprintf("%s %d", names(r$n_sig), r$n_sig), collapse = ", "), "\n")
-    h <- r$hallmark
-    cat("  Hallmark NES 상위 5:\n")
-    cat(sprintf("    %-45s NES %5.2f  padj %s\n", h$pathway, h$NES, fmt_p(h$padj)), sep = "")
+    cat(cancer, r$gene, sprintf("(기준 유전자 순위 %d / %d)\n", r$rank, r$n_tested))
+    cat("  padj < 0.05 경로 수 (공변량 없이도 유지):",
+        paste(sprintf("%s %d (%d)", names(r$n_sig), r$n_sig, r$n_robust), collapse = ", "), "\n")
+    for (k in c("up", "down")) {
+      h <- r[[paste0("hallmark_", k)]]
+      cat(sprintf("  Hallmark NES %s 5 (%s):\n", if (k == "up") "상위" else "하위",
+                  if (k == "up") paste(group_alt(), "쪽") else paste(group_ref(), "쪽")))
+      cat(sprintf("    %-45s NES %5.2f  padj %s\n", h$pathway, h$NES, fmt_p(h$padj)), sep = "")
+    }
   }
 }
 if (length(failures)) {

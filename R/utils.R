@@ -21,24 +21,54 @@ canon <- c(id = "sample_id", time = "surv_time", status = "status",
            neoadjuvant = "neoadjuvant", last_contact = "last_contact")
 schema_required <- c("id", "time", "status", "stage", "age", "sex")
 
-# 0/1 등 코드 → 라벨 기본값 (암종별 재정의: cfg$value_labels$<CANCER>)
-value_labels_default <- list(
-  pathologic_stage       = c(`1` = "I", `2` = "II", `3` = "III", `4` = "IV"),
-  pathologic_stage_12_34 = c(`0` = "I–II", `1` = "III–IV"),
-  cea_g                  = c(`0` = "≤5 ng/mL", `1` = ">5 ng/mL"),  # 5.0은 0
-  age_g                  = c(Low = "≤65", High = "≥66")
-)
+# 값 라벨 / 라벨 일관성 규칙: 기본값(cfg$*_default) + 암종별 재정의
+labels_for <- function(cancer) modifyList(cfg$value_labels_default, cfg$value_labels[[cancer]] %||% list())
+rules_for  <- function(cancer) modifyList(cfg$label_rules_default, cfg$label_rules[[cancer]] %||% list())
 
-# 라벨 일관성 규칙: 그룹 변수(code)가 원 변수(source) > cutoff 와 일치해야 함
-# high = source > cutoff 일 때의 코드 값 (암종별 재정의: cfg$label_rules$<CANCER>)
-label_rules_default <- list(
-  cea_g                  = list(source = "cea_level_pretreatment", cutoff = 5,  high = "1"),
-  age_g                  = list(source = "age",                    cutoff = 65, high = "High"),
-  pathologic_stage_12_34 = list(source = "pathologic_stage",       cutoff = 2,  high = "1")
-)
+# ---- 공변량 / 노출 그룹 (설정은 config.R) -------------------------------
 
-labels_for <- function(cancer) modifyList(value_labels_default, cfg$value_labels[[cancer]] %||% list())
-rules_for  <- function(cancer) modifyList(label_rules_default, cfg$label_rules[[cancer]] %||% list())
+group_ref <- function() cfg$group_levels[1]   # 기준 그룹 (Low)
+group_alt <- function() cfg$group_levels[2]   # 비교 그룹 (High)
+group_contrast_label <- function() paste(group_alt(), "vs", group_ref())
+
+# 연속형 공변량의 모형 항 이름 (age → age_per10) / 라벨
+scaled_term <- function(v) {
+  s <- cfg$covariate_scale[[v]]
+  if (is.null(s)) v else paste0(v, "_per", s$by)
+}
+scaled_label <- function(term) {
+  for (v in names(cfg$covariate_scale)) {
+    if (identical(term, scaled_term(v))) return(cfg$covariate_scale[[v]]$label)
+  }
+  NULL
+}
+add_scaled_terms <- function(d) {
+  for (v in intersect(names(cfg$covariate_scale), names(d))) {
+    d[[scaled_term(v)]] <- d[[v]] / cfg$covariate_scale[[v]]$by
+  }
+  d
+}
+
+# cfg$collapse_small_levels에 있는 변수: 소수 수준 → cfg$collapse_other_label
+collapse_small <- function(x, var) {
+  n_min <- cfg$collapse_small_levels[var]
+  if (is.null(n_min) || is.na(n_min)) return(x)
+  n <- table(x)
+  ifelse(is.na(x), NA, ifelse(x %in% names(n)[n >= n_min], as.character(x), cfg$collapse_other_label))
+}
+
+# cfg$reference_levels 적용 (존재하는 factor 변수, 해당 수준이 있을 때만)
+apply_reference_levels <- function(df) {
+  for (v in intersect(names(cfg$reference_levels), names(df))) {
+    ref <- cfg$reference_levels[[v]]
+    if (is.factor(df[[v]]) && ref %in% levels(df[[v]])) {
+      lab <- attr(df[[v]], "label")
+      df[[v]] <- relevel(df[[v]], ref = ref)
+      attr(df[[v]], "label") <- lab
+    }
+  }
+  df
+}
 
 # Table/그림용 변수 라벨
 var_labels <- c(
@@ -59,6 +89,7 @@ var_labels <- c(
   vascular_invasion_indicator         = "Vascular invasion",
   perineural_invasion                 = "Perineural invasion",
   tumor_status                        = "Tumor status",
+  tss                                 = "Tissue source site",
   # 검사 "시행 여부" 변수 — 변이/MMR 결과가 아님
   kras_gene_analysis_indicator        = "KRAS testing performed",
   braf_gene_analysis_indicator        = "BRAF testing performed",
@@ -208,15 +239,18 @@ detect_genes <- function(df) {
 
 # 발현 그룹 → factor(Low, High). 0/1 숫자는 1 = High
 as_group_factor <- function(x) {
+  lv <- cfg$group_levels
   if (is.numeric(x)) {
     if (!all(x %in% c(0, 1, NA))) stop("그룹 값이 0/1이 아님: ", paste(unique(x), collapse = ", "))
-    x <- c("Low", "High")[x + 1]
+    x <- lv[x + 1]                           # 0 → 기준(Low), 1 → 비교(High)
   }
-  x <- str_to_title(str_squish(as.character(x)))
-  x[x %in% c("", "Na")] <- NA
-  bad <- setdiff(unique(na.omit(x)), c("Low", "High"))
-  if (length(bad)) stop("알 수 없는 그룹 값: ", paste(bad, collapse = ", "))
-  factor(x, levels = c("Low", "High"))
+  x <- str_squish(as.character(x))
+  x[x %in% c("", "NA", "Na")] <- NA
+  m <- lv[match(tolower(x), tolower(lv))]    # 대소문자 무시하고 group_levels에 맞춤
+  bad <- unique(x[!is.na(x) & is.na(m)])
+  if (length(bad)) stop("알 수 없는 그룹 값: ", paste(bad, collapse = ", "),
+                        " (cfg$group_levels = ", paste(lv, collapse = ", "), ")")
+  factor(m, levels = lv)
 }
 
 # 공백 제거, TCGA 결측 표기 → NA, 숫자형 문자 → numeric,
@@ -505,7 +539,7 @@ check_label_consistency <- function(df, cancer) {
 # 분석용 변수 생성 (없는 열은 건너뜀 → 다른 암종에도 사용 가능)
 recode_clinical <- function(df, cancer) {
   if ("gender" %in% names(df)) {
-    df$gender <- factor(str_to_title(df$gender), levels = c("Male", "Female"))
+    df$gender <- factor(str_to_title(df$gender))   # 기준 수준: cfg$reference_levels
   }
   tnm <- c(pathologic_t = "T", pathologic_n = "N", pathologic_m = "M")
   for (v in intersect(names(tnm), names(df))) df[[v]] <- code_factor(df[[v]], tnm[[v]])
@@ -534,11 +568,13 @@ recode_clinical <- function(df, cancer) {
   }
 
   neo <- if ("neoadjuvant" %in% names(df)) as.character(df$neoadjuvant) else rep(NA, nrow(df))
-  df$neoadjuvant_flag <- !is.na(neo) & tolower(neo) == "yes"
+  neo_yes <- resolve_schema(cancer)$neoadjuvant_yes %||% "Yes"
+  df$neoadjuvant_flag <- !is.na(neo) & tolower(neo) == tolower(neo_yes)
 
   # 검체 제공 기관(tissue source site): TCGA-XX-.... 의 XX (민감도 분석 strata)
-  df$tss <- substr(df$sample_id, 6, 7)
+  df$tss <- substr(df$sample_id, cfg$tss_barcode_pos[1], cfg$tss_barcode_pos[2])
 
+  df <- apply_reference_levels(df)
   df <- set_var_labels(df)
   attr(df, "label_checks") <- checks
   df
@@ -548,8 +584,8 @@ recode_clinical <- function(df, cancer) {
 
 # 중앙값 초과 = High (새 유전자에만 사용; 기존 .sav 그룹은 덮어쓰지 않음)
 median_split <- function(x) {
-  factor(ifelse(is.na(x), NA, ifelse(x > median(x, na.rm = TRUE), "High", "Low")),
-         levels = c("Low", "High"))
+  factor(ifelse(is.na(x), NA, ifelse(x > median(x, na.rm = TRUE), group_alt(), group_ref())),
+         levels = cfg$group_levels)
 }
 
 # 기존 그룹이 median split과 일치하는지 QC (홀수 n의 중앙값 동점 1명 차이 허용)
@@ -557,7 +593,7 @@ check_median_split <- function(expr, group, tol = cfg$median_tie_tolerance) {
   ok <- !is.na(expr) & !is.na(group)
   n_diff <- sum(as.character(median_split(expr[ok])) != as.character(group[ok]))
   data.frame(n = sum(ok),
-             n_low = sum(group[ok] == "Low"), n_high = sum(group[ok] == "High"),
+             n_low = sum(group[ok] == group_ref()), n_high = sum(group[ok] == group_alt()),
              median = median(expr[ok]),
              n_diff_from_median_split = n_diff,
              median_split_pass = n_diff <= tol)
