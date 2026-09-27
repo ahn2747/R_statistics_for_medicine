@@ -24,6 +24,11 @@ Rules agreed with the user; don't change silently. Setting names are in docs/cov
 - Main design: `~ tss + group` (TSS collapsed as above; groups are unbalanced across sites). Contrast: `group_levels[2]` vs `group_levels[1]` (High vs Low).
 - Pre-filter: keep genes with count ≥ 10 in at least as many samples as the smaller group.
 - Rank by the DESeq2 Wald stat, remap symbols with the `.chip` file, and average duplicates.
+- **Gene set database: MSigDB v2026.1.Hs** (human). Both the gene sets and the symbol remapping use this release:
+  - Gene sets come from msigdbr 26.1.1, which downloads `msigdb.2026.1.zip` (Zenodo record 18968178) into `tools::R_user_dir("msigdbr", "cache")`. Upgrading msigdbr can change the release, so check the cache file names (`msigdb.<release>.Hs.*.rds`) after any upgrade.
+  - The remapping file is `database/Human_Gene_Symbol_with_Remapping_MSigDB.v2026.1.Hs.chip`. Keep its release the same as msigdbr's.
+  - Collections and set counts as loaded (before the size filter): Hallmark H 50, Reactome C2:CP:REACTOME 1,839, KEGG **C2:CP:KEGG_LEGACY** 186 (not MEDICUS), GO:BP C5:GO:BP 7,538, C8 866.
+- Software: R 4.6.1, DESeq2 1.52.0, apeglm 1.34.0, fgsea 1.38.0, msigdbr 26.1.1, TCGAbiolinks 2.40.0.
 - `fgseaMultilevel` with minSize 15, maxSize 500, eps 0 and a fixed seed.
 - GO:BP runs `collapsePathways` on the top 300 significant pathways.
 - `robust_no_covariate` = same NES sign and padj < 0.05 in the `~ group` run.
