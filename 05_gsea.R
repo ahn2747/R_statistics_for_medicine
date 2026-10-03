@@ -41,13 +41,9 @@ bp <-if (.Platform$OS.type == "windows") {
 
 # ---- 유전자 세트 --------------------------------------------------------
 
-# 기본 컬렉션 + cfg$gsea_extra_collections. subcollection이 여러 개면 처음 존재하는 것 사용
-collection_specs <- c(list(
-  Hallmark = list(collection = "H"),
-  Reactome = list(collection = "C2", subcollection = "CP:REACTOME"),
-  KEGG     = list(collection = "C2", subcollection = c("CP:KEGG_LEGACY", "CP:KEGG_MEDICUS")),
-  GOBP     = list(collection = "C5", subcollection = "GO:BP")
-), cfg$gsea_extra_collections)
+# cfg$gsea_collections. subcollection이 여러 개면 처음 존재하는 것 사용
+collection_specs <- cfg$gsea_collections
+if (!length(collection_specs)) stop("cfg$gsea_collections가 비어 있음 (예: Hallmark = list(collection = \"H\"))")
 
 load_gene_sets <- function(spec) {
   subs <- spec$subcollection %||% list(NULL)
@@ -374,8 +370,8 @@ analyze_gene <- function(g, cancer, cnt, merged, gdc_expr) {
   hl <- allr$pathway[norm_name(allr$pathway) %in% norm_name(cfg$gsea_highlight)]
   miss_hl <- cfg$gsea_highlight[!norm_name(cfg$gsea_highlight) %in% norm_name(allr$pathway)]
   if (length(miss_hl)) cat("           강조 경로 중 결과에 없음:", paste(miss_hl, collapse = ", "), "\n")
-  cat(sprintf("           enrichment plot: Hallmark %d, 강조 %d, C8 (%s) %d\n",
-              length(top_h), length(hl), cfg$gsea_c8_pattern, length(top_c8)))
+  cat(sprintf("           enrichment plot: Hallmark %d, 강조 %d%s\n", length(top_h), length(hl),
+              if (!is.null(all_res$C8)) sprintf(", C8 (%s) %d", cfg$gsea_c8_pattern, length(top_c8)) else ""))
   for (pw in unique(c(top_h, hl, top_c8))) {
     row  <- allr[allr$pathway == pw, ][1, ]
     genes <- gene_sets[[row$collection]][[pw]]
@@ -405,7 +401,8 @@ analyze_gene <- function(g, cancer, cnt, merged, gdc_expr) {
     summ, cancer, "gsea_summary", landscape = TRUE, font_size = 7, subdir = sub,
     caption = paste0("GSEA of ", gene, " ", group_contrast_label(), " expression, TCGA-", cancer,
                      " (DESeq2 Wald statistic, design ~ ", paste(c(covs, "group"), collapse = " + "),
-                     "). Hallmark: top 5 up and top 5 down by NES; other collections: top 10 by padj; ",
+                     "). Hallmark: top 5 up and top 5 down by NES; ",
+                     if (any(names(gene_sets) != "Hallmark")) "other collections: top 10 by padj; " else "",
                      "all padj < 0.05. Positive NES = enriched in ", group_alt(), ". ",
                      "Robust = same direction and padj < 0.05 with design ~ ",
                      paste(c(cfg$gsea_sensitivity_covariates, "group"), collapse = " + "), ".")))

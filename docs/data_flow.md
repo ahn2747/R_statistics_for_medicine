@@ -9,7 +9,7 @@
 - covariates, strata, reference levels and exclusions: see docs/covariates.md
 - survival: `km_times`, `ph_split_months`, `rmst_tau`
 - figures: `group_colors`
-- GSEA: `gsea_genes`, `gsea_design_covariates`, `gsea_sensitivity_covariates`, `gsea_extra_collections`, `gsea_highlight`, `gsea_c8_pattern`, `gsea_enrichment_top`, `gsea_size`, `n_cores`, `seed`
+- GSEA: `gsea_genes`, `gsea_design_covariates`, `gsea_sensitivity_covariates`, `gsea_collections`, `gsea_highlight`, `gsea_c8_pattern`, `gsea_enrichment_top`, `gsea_size`, `n_cores`, `seed`
 
 ## Column names
 - Schema fields are renamed to canonical names by `apply_schema_names()` (mapping in CLAUDE.md).

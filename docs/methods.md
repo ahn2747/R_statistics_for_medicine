@@ -42,10 +42,10 @@ Methods text:
 - **Gene set database: MSigDB v2026.1.Hs** (human). Both the gene sets and the symbol remapping use this release:
   - Gene sets come from msigdbr 26.1.1, which downloads `msigdb.2026.1.zip` (Zenodo record 18968178) into `tools::R_user_dir("msigdbr", "cache")`. Upgrading msigdbr can change the release, so check the cache file names (`msigdb.<release>.Hs.*.rds`) after any upgrade.
   - The remapping file is `database/Human_Gene_Symbol_with_Remapping_MSigDB.v2026.1.Hs.chip`. Keep its release the same as msigdbr's.
-  - Collections and set counts as loaded (before the size filter): Hallmark H 50, Reactome C2:CP:REACTOME 1,839, KEGG **C2:CP:KEGG_LEGACY** 186 (not MEDICUS), GO:BP C5:GO:BP 7,538, C8 866.
+  - **Collection: Hallmark only** (H, 50 sets as loaded, before the size filter). Collections are set in `cfg$gsea_collections`. Reactome, KEGG, GO:BP and C8 are no longer run; example specs for them are commented out in config.R.
 - Software: R 4.6.1, DESeq2 1.52.0, apeglm 1.34.0, fgsea 1.38.0, msigdbr 26.1.1, TCGAbiolinks 2.40.0.
 - `fgseaMultilevel` with minSize 15, maxSize 500, eps 0 and a fixed seed.
-- GO:BP runs `collapsePathways` on the top 300 significant pathways.
+- If GO:BP is added back to `cfg$gsea_collections`, it runs `collapsePathways` on the top 300 significant pathways.
 - `robust_no_covariate` = same NES sign and padj < 0.05 in the `~ group` run.
 - QC: Spearman correlation between GDC log2 TPM and the .sav expression (warns if r < 0.8). The gene itself must rank in the top 1% up in High, otherwise a warning is printed.
 
@@ -53,8 +53,8 @@ Methods text:
 - Enrichment plots cover:
   - the top `gsea_enrichment_top` Hallmark pathways by padj (significant only)
   - every `gsea_highlight` pathway
-  - the top C8 cell-type sets matching `gsea_c8_pattern` (default B cells / plasma cells, significant only)
-- `gsea_summary` lists the Hallmark top 5 up and top 5 down by NES, and the top 10 by padj for the other collections.
+  - only if C8 is added back to `cfg$gsea_collections`: the top C8 cell-type sets matching `gsea_c8_pattern` (significant only)
+- `gsea_summary` lists the significant Hallmark top 5 up and top 5 down by NES. Any other collection added to `cfg$gsea_collections` gets its top 10 by padj.
 - apeglm optimizer warnings are suppressed, and the number suppressed is printed.
 
 ## External validation in GEO (06)

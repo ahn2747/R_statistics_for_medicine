@@ -17,7 +17,7 @@ R 4.6.1 is not on PATH. Use `"C:/Program Files/R/R-4.6.1/bin/Rscript.exe" <scrip
 02b_merge_genes.R       # database/gene_files/*.csv → data/processed/<C>_merged.{rds,csv,sav} + merge_QC
 03_table1.R             # table1_<GENE>.{docx,csv}, table1_overall, tss_by_group_<GENE>.csv
 04_survival.R           # KM, Cox, strata(tss), cox.zph, time-split Cox, RMST, BH q, forest plots
-05_gsea.R [COAD]        # DESeq2 High vs Low (~ tss + group) + fgsea on MSigDB; needs 02a outputs; run one cancer per process
+05_gsea.R [COAD]        # DESeq2 High vs Low (~ tss + group) + fgsea on MSigDB Hallmark only (cfg$gsea_collections); needs 02a outputs; run one cancer per process
 06_external_geo.R [GSE] # GEO validation of cfg$primary_gene (cfg$geo_datasets; needs GEOquery, i.e. 00_setup.R without --core; reads 04's <C>_survival_summary_raw.csv)
 ```
 - `07_timer` and `08_proteomics` are optional and not written yet.

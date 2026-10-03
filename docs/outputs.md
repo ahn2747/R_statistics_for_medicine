@@ -40,7 +40,7 @@
 - Figures: `km_`, `forest_multi_`, `forest_genes`, and `zph_<GENE>.pdf` (only when PH is violated).
 
 ## 05 outputs
-- `output/tables/<C>/gsea/<GENE>/`: `de_results.csv`, `gsea_<Hallmark|Reactome|KEGG|GOBP|C8>.csv`, `gsea_QC.csv`, `gsea_summary.{docx,csv}`
+- `output/tables/<C>/gsea/<GENE>/`: `de_results.csv`, `gsea_Hallmark.csv` (one `gsea_<collection>.csv` per `cfg$gsea_collections` entry), `gsea_QC.csv`, `gsea_summary.{docx,csv}`
 - `output/figures/<C>/gsea/<GENE>/`: `volcano`, `pca`, `nes_<collection>`, `enrichment_<PATHWAY>` (selection rules in docs/methods.md)
 - `data/processed/<C>_dds_<GENE>.rds`
 

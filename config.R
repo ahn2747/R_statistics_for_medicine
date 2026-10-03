@@ -61,13 +61,16 @@ cfg <- list(
   gsea_genes             = NULL,           # NULL = primary_gene, "all" = 모든 유전자, 또는 c("MS4A1", "TIMP1")
   gsea_design_covariates = c("tss"),       # 주 design: ~ <공변량> + group
   gsea_sensitivity_covariates = character(),   # 민감도 design (기본: ~ group, 공변량 없음)
-  gsea_extra_collections = list(           # 기본(Hallmark, Reactome, KEGG, GO:BP) 외 추가 MSigDB 컬렉션
-    C8 = list(collection = "C8")           #   C8: 세포 유형 signature (면역/B세포)
+  gsea_collections = list(                 # fgsea 대상 MSigDB 컬렉션 (이름 = 출력 파일명 gsea_<이름>)
+    Hallmark = list(collection = "H")
+    # 예: Reactome = list(collection = "C2", subcollection = "CP:REACTOME"),
+    #     KEGG = list(collection = "C2", subcollection = c("CP:KEGG_LEGACY", "CP:KEGG_MEDICUS")),
+    #     GOBP = list(collection = "C5", subcollection = "GO:BP"), C8 = list(collection = "C8")
   ),
   gsea_highlight = c("HALLMARK_INTERFERON_GAMMA_RESPONSE", "HALLMARK_ALLOGRAFT_REJECTION"
                      ),   # 항상 enrichment plot 그릴 경로
-  gsea_c8_pattern = "B_CELL|PLASMA",       # C8에서 enrichment plot을 그릴 세포 유형 (정규식, padj < 0.05)
-  gsea_enrichment_top = 5,                 # enrichment plot: Hallmark 상위 N개 (padj 순) + C8 패턴 상위 N개
+  gsea_c8_pattern = "B_CELL|PLASMA",       # C8이 gsea_collections에 있을 때만: enrichment plot 그릴 세포 유형 (정규식, padj < 0.05)
+  gsea_enrichment_top = 5,                 # enrichment plot: Hallmark 상위 N개 (padj 순) (+ C8 있으면 C8 패턴 상위 N개)
   gsea_size    = c(15, 500),               # fgsea minSize, maxSize
   n_cores      = 2,                        # DESeq2/fgsea 병렬 (Windows: SnowParam; 워커마다 데이터 복사 → 메모리 주의)
   seed         = 2026,
