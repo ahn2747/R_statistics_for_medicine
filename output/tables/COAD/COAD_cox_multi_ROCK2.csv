@@ -1,9 +1,8 @@
 ﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
-"ROCK2 expression","Low (ref)",132,31,"Reference",,
-"","High",141,18,"0.50 (0.28–0.91)","0.024",
+"ROCK2 expression, log2 (per 1 unit)","",273,49,"0.93 (0.70–1.23)","0.602",
 "Sex","Male (ref)",141,23,"Reference",,
-"","Female",132,26,"1.05 (0.60–1.86)","0.859",
+"","Female",132,26,"1.03 (0.58–1.83)","0.928",
 "Pathologic stage group","I–II (ref)",151,16,"Reference",,
-"","III–IV",122,33,"3.30 (1.77–6.17)","<0.001",
+"","III–IV",122,33,"2.92 (1.57–5.43)","<0.001",
 "Pretreatment CEA","≤5 ng/mL (ref)",178,21,"Reference",,
-"",">5 ng/mL",95,28,"2.02 (1.13–3.61)","0.018",
+"",">5 ng/mL",95,28,"2.25 (1.26–4.01)","0.006",

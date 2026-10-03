@@ -37,7 +37,7 @@ cfg <- list(
                               pathologic_stage_12_34 = "I\u2013II"),
 
   # Cox 모형 (04)
-  cox_gene_term        = "group",          # 다변량/층화/시간 분할 Cox의 유전자 항 (04, 06): "group" = High vs Low, "continuous" = log2 1단위
+  cox_gene_term        = "continuous",          # 다변량/층화/시간 분할 Cox의 유전자 항 (04, 06): "group" = High vs Low, "continuous" = log2 1단위
   cox_covariates       = c("ageG", "gender", "pathologic_stage_12_34", "cea_g"),            # 다변량 보정 변수
   cox_uni_covariates   = c("ageG", "gender", "pathologic_stage_12_34", "cea_g"),  # 단변량 표
   covariate_scale      = list(age = list(by = 1, label = "Age (per 10 years)")),  # 연속형 단위

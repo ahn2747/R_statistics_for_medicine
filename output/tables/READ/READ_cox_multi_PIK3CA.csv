@@ -1,9 +1,8 @@
 ﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
-"PIK3CA expression","Low (ref)",51,9,"Reference",,
-"","High",52,4,"0.35 (0.11–1.15)","0.084",
+"PIK3CA expression, log2 (per 1 unit)","",103,13,"0.56 (0.23–1.41)","0.222",
 "Sex","Male (ref)",62,9,"Reference",,
-"","Female",41,4,"0.77 (0.23–2.54)","0.666",
+"","Female",41,4,"0.79 (0.24–2.62)","0.698",
 "Pathologic stage group","I–II (ref)",50,5,"Reference",,
-"","III–IV",53,8,"1.55 (0.48–5.02)","0.465",
+"","III–IV",53,8,"1.65 (0.52–5.25)","0.394",
 "Pretreatment CEA","≤5 ng/mL (ref)",61,7,"Reference",,
-"",">5 ng/mL",42,6,"1.61 (0.48–5.37)","0.442",
+"",">5 ng/mL",42,6,"1.60 (0.48–5.28)","0.444",

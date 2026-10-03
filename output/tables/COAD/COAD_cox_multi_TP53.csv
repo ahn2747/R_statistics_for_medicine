@@ -1,9 +1,8 @@
 ﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
-"TP53 expression","Low (ref)",138,29,"Reference",,
-"","High",135,20,"0.70 (0.38–1.29)","0.256",
+"TP53 expression, log2 (per 1 unit)","",273,49,"0.89 (0.70–1.15)","0.380",
 "Sex","Male (ref)",141,23,"Reference",,
-"","Female",132,26,"1.16 (0.64–2.10)","0.623",
+"","Female",132,26,"1.05 (0.59–1.85)","0.867",
 "Pathologic stage group","I–II (ref)",151,16,"Reference",,
-"","III–IV",122,33,"2.81 (1.52–5.21)","0.001",
+"","III–IV",122,33,"2.76 (1.49–5.14)","0.001",
 "Pretreatment CEA","≤5 ng/mL (ref)",178,21,"Reference",,
-"",">5 ng/mL",95,28,"2.25 (1.26–4.01)","0.006",
+"",">5 ng/mL",95,28,"2.27 (1.27–4.05)","0.006",

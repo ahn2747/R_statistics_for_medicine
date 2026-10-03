@@ -1,9 +1,8 @@
 ﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
-"TIMP1 expression","Low (ref)",134,17,"Reference",,
-"","High",139,32,"2.23 (1.22–4.06)","0.009",
+"TIMP1 expression, log2 (per 1 unit)","",273,49,"1.47 (1.07–2.01)","0.016",
 "Sex","Male (ref)",141,23,"Reference",,
-"","Female",132,26,"1.01 (0.57–1.78)","0.974",
+"","Female",132,26,"0.98 (0.55–1.73)","0.937",
 "Pathologic stage group","I–II (ref)",151,16,"Reference",,
-"","III–IV",122,33,"2.91 (1.58–5.36)","<0.001",
+"","III–IV",122,33,"2.85 (1.55–5.26)","<0.001",
 "Pretreatment CEA","≤5 ng/mL (ref)",178,21,"Reference",,
-"",">5 ng/mL",95,28,"2.47 (1.38–4.42)","0.002",
+"",">5 ng/mL",95,28,"2.42 (1.36–4.33)","0.003",
