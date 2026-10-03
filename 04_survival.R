@@ -3,7 +3,9 @@
 # 전체 생존(OS) 분석: Surv(os_months, status), status 1 = 사망
 #   1. Kaplan–Meier (Low vs High) + log-rank, 중앙 생존기간, 3/5년 생존율
 #   2. 단변량 Cox: 유전자 그룹, 유전자 연속형(log2), 임상 공변량
-#   3. 다변량 Cox: 유전자 그룹 + age(10세 단위) + gender + stage (EPV 부족 시 stage I–II vs III–IV)
+#   3. 다변량 Cox: 유전자 항 + cfg$cox_covariates (EPV 부족 시 stage I–II vs III–IV)
+#      유전자 항 = cfg$cox_gene_term ("group" = High vs Low, "continuous" = log2 1단위); 층화/시간 분할/요약 HR도 동일
+#      KM, log-rank, RMST는 항상 High vs Low
 #   4. 민감도 분석: 다변량 + strata(cfg$strata_var)
 #   5. 비례위험 가정 (cox.zph)
 #   6. 유전자 간 BH 보정 q-value
@@ -56,18 +58,23 @@ analyze_gene <- function(g, base, cancer, uni_cov_terms) {
   low  <- ks[ks$group == group_ref(), ]
   high <- ks[ks$group == group_alt(), ]
 
-  # ---- 2. 단변량 Cox (그룹, 연속형) ----
+  # ---- 2. 단변량 Cox (그룹, 연속형 둘 다 표에; 요약/PH 검정은 cfg$cox_gene_term 항) ----
+  gt     <- gene_term()
   labs_g <- term_labels(c("group", "expr_log2"), gene)
-  fit_u  <- fit_cox(d, "group")
-  uni_g  <- cox_rows(fit_u, d, "group", labs_g)
+  fit_g  <- fit_cox(d, "group")
+  uni_g  <- cox_rows(fit_g, d, "group", labs_g)
   dc     <- d[!is.na(d$expr_log2), ]
-  uni_c  <- cox_rows(fit_cox(dc, "expr_log2"), dc, "expr_log2", labs_g)
+  fit_c  <- fit_cox(dc, "expr_log2")
+  uni_c  <- cox_rows(fit_c, dc, "expr_log2", labs_g)
   res$uni <- rbind(data.frame(gene = gene, uni_g), data.frame(gene = gene, uni_c))
+  fit_u  <- if (gt == "group") fit_g else fit_c
+  uni_k  <- if (gt == "group") uni_g else uni_c
+  uni_k  <- uni_k[!uni_k$reference, ]
   zph <- zph_rows(fit_u, gene, "univariable")
 
   # ---- 3. 다변량 Cox (EPV 확인 후 stage 변수 결정) ----
   cov_terms <- intersect(unname(sapply(cfg$cox_covariates, model_term)), names(d))
-  m <- build_multi(d, c("group", cov_terms))
+  m <- build_multi(d, c(gt, cov_terms))
   stage_used   <- m$stage_used
   stage_levels <- m$stage_levels
   epv          <- m$epv
@@ -84,7 +91,7 @@ analyze_gene <- function(g, base, cancer, uni_cov_terms) {
   multi <- cox_rows(fit_m, m$d, m$terms, term_labels(m$terms, gene))
   res$multi <- multi
   zph <- rbind(zph, zph_rows(fit_m, gene, "multivariable"))
-  mg <- multi[multi$term == "group" & !multi$reference, ]
+  mg <- multi[multi$term == gt & !multi$reference, ]
 
   tab_m <- format_cox(multi)
   res$files <- c(res$files, save_df_table(
@@ -104,7 +111,7 @@ analyze_gene <- function(g, base, cancer, uni_cov_terms) {
   ds$strata_grp <- collapse_small(ds[[cfg$strata_var]], cfg$strata_var)
   fit_s <- fit_cox(ds, m$terms, strata = "strata_grp")
   sg <- cox_rows(fit_s, ds, m$terms, term_labels(m$terms, gene))
-  sg <- sg[sg$term == "group" & !sg$reference, ]
+  sg <- sg[sg$term == gt & !sg$reference, ]
 
   # ---- 5. 비례위험 그림 (위반 모형만) ----
   res$zph <- zph
@@ -125,11 +132,11 @@ analyze_gene <- function(g, base, cancer, uni_cov_terms) {
     res$files <- c(res$files, f)
   }
 
-  # ---- 6. 시간 분할 Cox: 유전자 그룹 항이 PH 위반(p < 0.05)일 때만 ----
-  # 다변량 모형과 같은 공변량/환자, High 효과를 0–cut / >cut 구간으로 분리
+  # ---- 6. 시간 분할 Cox: 유전자 항이 PH 위반(p < 0.05)일 때만 ----
+  # 다변량 모형과 같은 공변량/환자, 유전자 항 효과를 0–cut / >cut 구간으로 분리
   ts <- data.frame(hr_early = NA, lo_early = NA, hi_early = NA, p_early = NA,
                    hr_late = NA, lo_late = NA, hi_late = NA, p_late = NA)
-  if (any(zph$flag & zph$term == "group")) {
+  if (any(zph$flag & zph$term == gt)) {
     tsc <- time_split_cox(m$d, m$terms, cfg$ph_split_months)
     ts  <- tsc$est
     cat("           ", tsc$msg, "\n", sep = "")
@@ -147,7 +154,7 @@ analyze_gene <- function(g, base, cancer, uni_cov_terms) {
     median_os_low  = fmt_median(low$median, low$median_lo, low$median_hi),
     median_os_high = fmt_median(high$median, high$median_lo, high$median_hi),
     logrank_p = p_lr,
-    uni_hr = uni_g$hr[2], uni_lo = uni_g$lo[2], uni_hi = uni_g$hi[2], uni_p = uni_g$p[2],
+    uni_hr = uni_k$hr, uni_lo = uni_k$lo, uni_hi = uni_k$hi, uni_p = uni_k$p,
     multi_n = nrow(m$d), multi_dropped = dropped, multi_events = m$events,
     multi_hr = mg$hr, multi_lo = mg$lo, multi_hi = mg$hi, multi_p = mg$p,
     params = m$k, epv = epv, stage_var = stage_used, exploratory = exploratory,
@@ -230,8 +237,10 @@ for (cancer in cfg$cancers) {
   s$logrank_q <- bh_exploratory(s$logrank_p, s$role)
   s$uni_q     <- bh_exploratory(s$uni_p, s$role)
   s$multi_q   <- bh_exploratory(s$multi_p, s$role)
+  s$cox_gene_term <- cfg$cox_gene_term %||% "group"   # 06이 TCGA HR과 같은 척도인지 확인
   created <- c(created, save_table(s, cancer, "survival_summary_raw.csv"))
 
+  gt_all <- gene_term()
   q_txt <- function(q) ifelse(s$role == "primary", "–", fmt_p(q))
   sc <- cfg$ph_split_months
   out <- data.frame(
@@ -264,7 +273,9 @@ for (cancer in cfg$cancers) {
     out, cancer, "survival_summary", landscape = TRUE, font_size = 6,
     caption = paste0(
       "Overall survival by gene expression (", group_contrast_label(), "), TCGA-", cancer,
-      ". HR from Cox regression; multivariable model adjusted for ", adjust_text(), ". Sensitivity: stratified by ", cfg$strata_var, ". ",
+      ". HR from Cox regression",
+      if (gt_all != "group") "; gene HRs (univariable, multivariable, strata, time-split) are per 1 log2 unit of expression" else "",
+      "; multivariable model adjusted for ", adjust_text(), ". Sensitivity: stratified by ", cfg$strata_var, ". ",
       "q = Benjamini–Hochberg across exploratory genes only; the primary gene (", primary,
       ") is reported with its unadjusted p. Time-split HRs (0–", sc, " / >", sc,
       " months, adjusted) are shown only for genes whose expression term violated proportional hazards. ",
@@ -307,7 +318,7 @@ for (cancer in cfg$cancers) {
                       ifelse(fg$role == "primary", " [primary]", ""), fg$multi_n, fg$multi_events),
       hr = fg$multi_hr, lo = fg$multi_lo, hi = fg$multi_hi, p = fg$multi_p, reference = FALSE,
       shape = ifelse(fg$exploratory, "exploratory", "est"))
-    sub <- paste0(group_contrast_label(), " expression; adjusted for ", adjust_text(),
+    sub <- paste0(gene_term_label(), "; adjusted for ", adjust_text(),
                   if (any(fg$exploratory)) paste0(". Open squares: exploratory (EPV < ", cfg$epv_min, ")") else "")
     created <- c(created, save_fig(
       forest_plot(fg_tab, paste0("Multivariable Cox: gene expression — TCGA-", cancer), sub),

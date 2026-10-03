@@ -1,4 +1,10 @@
 ﻿"file","csv_status","sav_status","Freq"
+"READ_50_50_HIST1H2AC.csv","Alive","0",131
+"READ_50_50_HIST1H2AC.csv","Dead","0",0
+"READ_50_50_HIST1H2AC.csv","Alive","1",0
+"READ_50_50_HIST1H2AC.csv","Dead","1",25
+"READ_50_50_HIST1H2AC.csv","Alive",,2
+"READ_50_50_HIST1H2AC.csv","Dead",,0
 "READ_50_50_MS4A1.csv","Alive","0",131
 "READ_50_50_MS4A1.csv","Dead","0",0
 "READ_50_50_MS4A1.csv","Alive","1",0

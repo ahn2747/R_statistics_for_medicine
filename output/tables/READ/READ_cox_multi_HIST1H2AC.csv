@@ -1,0 +1,9 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"HIST1H2AC expression","Low (ref)",56,4,"Reference",,
+"","High",46,9,"2.62 (0.75–9.15)","0.131",
+"Sex","Male (ref)",61,9,"Reference",,
+"","Female",41,4,"0.96 (0.29–3.24)","0.950",
+"Pathologic stage group","I–II (ref)",50,5,"Reference",,
+"","III–IV",52,8,"1.45 (0.45–4.66)","0.530",
+"Pretreatment CEA","≤5 ng/mL (ref)",61,7,"Reference",,
+"",">5 ng/mL",41,6,"1.42 (0.44–4.61)","0.558",

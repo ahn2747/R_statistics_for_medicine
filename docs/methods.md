@@ -10,11 +10,12 @@ Rules agreed with the user; don't change silently. Setting names are in docs/cov
 
 ## Survival (04)
 - **Cox models:**
-  - The multivariable model is the gene group + `cox_covariates` (age per 10 years, gender, stage), as a complete-case analysis.
+  - The multivariable model is the gene term + `cox_covariates` (age per 10 years, gender, stage), as a complete-case analysis.
+  - **Gene term** (`cfg$cox_gene_term`): `"group"` (default) = High vs Low; `"continuous"` = `<gene>_expression_log2`, HR per 1 log2 unit. It applies to the multivariable, `strata(tss)` and time-split models, to the univariable HR in `survival_summary` and `forest_genes`, and to the PH check that triggers the time-split model. KM, log-rank and RMST always compare High vs Low. The `cox_uni` table always lists both the group and continuous univariable rows. `survival_summary_raw.csv` records the setting in `cox_gene_term`.
   - EPV = events / number of parameters. If EPV < `epv_min`, `stage_12_34` replaces stage I–IV. If EPV is still low, the result is `exploratory = TRUE`; all READ models are (EPV about 5.8).
   - Sensitivity analysis: `strata(tss)`. The expression group is strongly associated with TSS for many genes (`tss_by_group_*.csv`), so report this analysis.
 - **PH violations:**
-  - Time-split Cox (0–24 / >24 months, adjusted) is run only when the gene **group term** has cox.zph p < 0.05. Currently that is READ TIMP1 and READ APC.
+  - Time-split Cox (0–24 / >24 months, adjusted) is run only when the **gene term** (`cox_gene_term`) has cox.zph p < 0.05. With the group term, that was READ TIMP1 and READ APC.
   - COAD TIMP1 violates PH only through its stage term.
   - RMST (High − Low, tau = 60) is reported for every gene.
 - **Multiple testing:** BH q-values are computed across the exploratory genes only. The primary gene reports its raw p, and its q is shown as "–".
@@ -65,9 +66,10 @@ Methods text:
 - **Models (per endpoint, all tumors):**
   - univariable (group)
   - univariable continuous (per 1 log2 unit)
-  - multivariable with `cox_covariates`, using the same EPV rule as 04 (`build_multi()`)
+  - multivariable with the gene term (`cox_gene_term`, as in 04) + `cox_covariates`, using the same EPV rule as 04 (`build_multi()`)
   - the same multivariable model restricted to patients with known extra covariate
-  - multivariable + `extra_covariate` (MMR status), with the group × MMR likelihood-ratio interaction test
+  - multivariable + `extra_covariate` (MMR status), with the gene term × MMR likelihood-ratio interaction test
+  - The TCGA direction comparison uses 04's `multi_hr`. It is skipped with a warning if 04 ran with a different `cox_gene_term`.
   - Comparing the last two on the same patients isolates the effect of MMR adjustment. This answers the MSI/immune-confounding question that TCGA can't address yet (no MSI result).
 - **Subgroup:** KM, univariable and multivariable models are repeated in pMMR.
 - **PH, time-split and RMST:** these follow the 04 rules. cox.zph runs for every model. The time-split Cox (0–24 / >24 months) runs on the multivariable model only when the gene term violates PH. RMST (High − Low, tau 60) is always reported. Time-0 patients are kept (the survSplit origin is shifted below 0).

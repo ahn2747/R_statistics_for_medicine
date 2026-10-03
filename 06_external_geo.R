@@ -343,11 +343,12 @@ analyze_endpoint <- function(d, ep, g, gse, gene, pop = "All") {
     "GEO", paste0("km_", tag), width = 7, height = 6, subdir = gse, prefix = gse)))
 
   # ---- Cox 모형들 ----
+  gt <- gene_term()   # 다변량/시간 분할 모형의 유전자 항 (cfg$cox_gene_term)
   cov_terms <- intersect(unname(sapply(cfg$cox_covariates, model_term)), names(de))
   labs <- term_labels(c("group", "expr_log2", cov_terms, g$extra_covariate, cfg$stage_collapsed), gene)
   rows <- list(); cox_tabs <- list(); zph <- list()
 
-  add_model <- function(name, m, key_term = "group", keep_table = FALSE) {
+  add_model <- function(name, m, key_term = gt, keep_table = FALSE) {
     fit <- fit_cox(m$d, m$terms, time = time, event = event)
     tab <- cox_rows(fit, m$d, m$terms, labs[m$terms], event = event)
     z   <- zph_rows(fit, gene, name)
@@ -371,10 +372,10 @@ analyze_endpoint <- function(d, ep, g, gse, gene, pop = "All") {
          stage_levels = NA, exploratory = FALSE)
   }
 
-  add_model("Univariable", simple("group"))
+  add_model("Univariable", simple("group"), key_term = "group")
   add_model("Univariable, continuous (per 1 log2 unit)", simple("expr_log2"), key_term = "expr_log2")
 
-  m <- build_multi(de, c("group", cov_terms), event = event)
+  m <- build_multi(de, c(gt, cov_terms), event = event)
   add_model("Multivariable", m, keep_table = is.null(g$extra_covariate) || pop != "All")
   cat(sprintf("  [%s] 다변량: n = %d (결측 제외 %d), 사건 %d, 모수 %d, EPV %.1f, stage = %s%s\n",
               tag, nrow(m$d), m$dropped, m$events, m$k, m$epv, m$stage_levels,
@@ -384,20 +385,20 @@ analyze_endpoint <- function(d, ep, g, gse, gene, pop = "All") {
   x <- g$extra_covariate
   if (!is.null(x) && pop == "All" && x %in% names(de)) {
     xl  <- model_label_extra(g)
-    mk  <- build_multi(de[!is.na(de[[x]]), ], c("group", cov_terms), event = event)
+    mk  <- build_multi(de[!is.na(de[[x]]), ], c(gt, cov_terms), event = event)
     add_model(paste0("Multivariable (", xl, " known)"), mk)
-    mx  <- build_multi(de, c("group", cov_terms, x), event = event)
+    mx  <- build_multi(de, c(gt, cov_terms, x), event = event)
     fx  <- add_model(paste0("Multivariable + ", xl), mx, keep_table = TRUE)
-    fi  <- fit_cox(mx$d, c(mx$terms, paste0("group:", x)), time = time, event = event)
+    fi  <- fit_cox(mx$d, c(mx$terms, paste0(gt, ":", x)), time = time, event = event)
     p_int <- anova(fx, fi)[["Pr(>|Chi|)"]][2]
     rows[[length(rows)]]$p_interaction <- p_int
-    cat(sprintf("  [%s] + %s: n = %d, 사건 %d, EPV %.1f; group × %s 상호작용 p = %s\n",
-                tag, xl, nrow(mx$d), mx$events, mx$epv, x, fmt_p(p_int)))
+    cat(sprintf("  [%s] + %s: n = %d, 사건 %d, EPV %.1f; %s × %s 상호작용 p = %s\n",
+                tag, xl, nrow(mx$d), mx$events, mx$epv, gt, x, fmt_p(p_int)))
   }
 
-  # ---- 시간 분할 Cox (04와 같은 규칙: 유전자 그룹 항이 PH 위반일 때만, 다변량 모형 기준) ----
+  # ---- 시간 분할 Cox (04와 같은 규칙: 유전자 항이 PH 위반일 때만, 다변량 모형 기준) ----
   zz <- bind_rows(zph)
-  if (any(zz$flag & zz$term == "group")) {
+  if (any(zz$flag & zz$term == gt)) {
     cut <- cfg$ph_split_months
     tsc <- time_split_cox(m$d, m$terms, cut, time = time, event = event)
     cat("  [", tag, "] ", tsc$msg, "\n", sep = "")
@@ -406,7 +407,7 @@ analyze_endpoint <- function(d, ep, g, gse, gene, pop = "All") {
       rows[[length(rows) + 1]] <- data.frame(
         endpoint = ep, population = pop,
         model = if (w == 1) sprintf("Multivariable, 0–%d months", cut) else sprintf("Multivariable, >%d months", cut),
-        term = "group",
+        term = gt,
         n = if (w == 1) nrow(m$d) else sum(m$d[[time]] > cut), events = sum(tsc$events[w, ]),
         dropped = m$dropped, params = m$k, epv = m$epv, stage_levels = m$stage_levels,
         exploratory = m$exploratory,
@@ -439,6 +440,13 @@ tcga_reference <- function(cancer, gene) {
   s <- read.csv(f, stringsAsFactors = FALSE)
   r <- s[s$gene == gene, ]
   if (!nrow(r) || is.na(r$multi_hr)) return(NULL)
+  # 04가 다른 cfg$cox_gene_term으로 실행됐으면 HR 척도가 달라 비교 불가 (열 없는 옛 파일 = group)
+  tg <- r$cox_gene_term %||% "group"
+  if (tg != (cfg$cox_gene_term %||% "group")) {
+    warning(f, ": cox_gene_term = ", tg, " (현재 cfg$cox_gene_term = ", cfg$cox_gene_term,
+            ") → TCGA 방향 비교 생략 (04_survival.R 다시 실행)", call. = FALSE)
+    return(NULL)
+  }
   r
 }
 
@@ -530,11 +538,14 @@ run_geo_validation <- function(gse, cfg_geo) {
     tab, "GEO", "survival_summary", landscape = TRUE, font_size = 7, subdir = gse, prefix = gse,
     caption = paste0(
       "External validation of ", gene, " expression (", group_contrast_label(), ", median split of probe ", probe,
-      " within tumors) in ", g$label, ". HR from Cox regression; multivariable models adjusted for ", adjust_text(),
+      " within tumors) in ", g$label, ". HR from Cox regression",
+      if (gene_term() != "group") "; multivariable and time-split gene HRs are per 1 log2 unit of expression" else "",
+      "; multivariable models adjusted for ", adjust_text(),
       if (!is.null(g$extra_covariate)) paste0("; '+ ", model_label_extra(g), "' additionally adjusts for ",
                                               tolower(model_label_extra(g)), " and '(", model_label_extra(g),
                                               " known)' is the model without it on the same patients") else "",
-      if (!is.null(g$extra_covariate)) paste0(". Interaction p = likelihood-ratio test for ", gene, " group × ",
+      if (!is.null(g$extra_covariate)) paste0(". Interaction p = likelihood-ratio test for ", gene,
+                                              if (gene_term() == "group") " group × " else " expression × ",
                                               tolower(model_label_extra(g))) else "",
       ". Time-split HRs (0–", cfg$ph_split_months, " / >", cfg$ph_split_months,
       " months, adjusted) are shown only when the gene term violated proportional hazards. RMST difference = ",
@@ -581,13 +592,13 @@ run_geo_validation <- function(gse, cfg_geo) {
   }
 
   # ---- forest: 모형별 유전자 HR ----
-  fs <- s[s$term == "group", ]
+  fs <- s[s$term == gene_term(), ]
   ft <- data.frame(
     label = sprintf("%s, %s: %s (n = %d, events = %d)", fs$endpoint, fs$population, fs$model, fs$n, fs$events),
     hr = fs$hr, lo = fs$lo, hi = fs$hi, p = fs$p, reference = FALSE,
     shape = ifelse(fs$exploratory, "exploratory", "est"))
   created <- c(created, save_fig(
-    forest_plot(ft, paste0(gene, " expression (", group_contrast_label(), ") — ", g$label),
+    forest_plot(ft, paste0(gene, " ", gene_term_label(), " — ", g$label),
                 paste0("Probe ", probe, "; multivariable models adjusted for ", adjust_text())),
     "GEO", "forest", width = 13, height = 1.6 + 0.35 * nrow(ft), subdir = gse, prefix = gse))
 
@@ -638,7 +649,7 @@ for (gse in names(console)) {
     cat(sprintf("  TCGA-%s 다변량 HR %s, p %s\n", g$validates,
                 fmt_hr(r$tcga$multi_hr, r$tcga$multi_lo, r$tcga$multi_hi), fmt_p(r$tcga$multi_p)))
   }
-  for (i in which(s$term == "group")) {
+  for (i in which(s$term == gene_term())) {
     cat(sprintf("  %-4s %-5s %-38s n = %3d, 사건 %3d: HR %s, p %s%s%s\n",
                 s$endpoint[i], s$population[i], s$model[i], s$n[i], s$events[i],
                 fmt_hr(s$hr[i], s$lo[i], s$hi[i]), fmt_p(s$p[i]),

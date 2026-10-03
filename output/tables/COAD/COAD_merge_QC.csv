@@ -1,3 +1,4 @@
-﻿"gene","file","action","n_file","n_matched","n_file_not_in_clinical","file_not_in_clinical","status_mismatch","n_compared","expr_identical_pct","expr_correlation","group_identical_pct","n","n_low","n_high","median","n_diff_from_median_split","median_split_pass"
-"MS4A1","COAD_50_50_MS4A1.csv","QC only (already in .sav)",440,440,0,"",0,440,100,1,100,440,220,220,14.14,0,TRUE
-"ROCK2","COAD_50_50_ROCK2.csv","QC only (already in .sav)",440,440,0,"",0,439,100,1,100,440,220,220,1393.645,0,TRUE
+﻿"gene","file","action","n_file","n_matched","n_file_not_in_clinical","file_not_in_clinical","status_mismatch","n","n_low","n_high","median","n_diff_from_median_split","median_split_pass","n_compared","expr_identical_pct","expr_correlation","group_identical_pct"
+"HIST1H2AC","COAD_50_50_HIST1H2AC.csv","merged",440,440,0,"",0,440,220,220,529.9000000000001,0,TRUE,,,,
+"MS4A1","COAD_50_50_MS4A1.csv","QC only (already in .sav)",440,440,0,"",0,440,220,220,14.14,0,TRUE,440,100,1,100
+"ROCK2","COAD_50_50_ROCK2.csv","QC only (already in .sav)",440,440,0,"",0,440,220,220,1393.645,0,TRUE,439,100,1,100

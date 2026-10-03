@@ -28,6 +28,18 @@ term_labels <- function(terms, gene = NULL) {
   setNames(labs, terms)
 }
 
+# 다변량/층화/시간 분할 Cox의 유전자 항 (cfg$cox_gene_term): "group" → group, "continuous" → expr_log2
+gene_term <- function() {
+  mode <- cfg$cox_gene_term %||% "group"
+  switch(mode, group = "group", continuous = "expr_log2",
+         stop("cfg$cox_gene_term은 \"group\" 또는 \"continuous\"이어야 함: ", mode))
+}
+
+# 캡션용 유전자 항 설명 ("High vs Low expression" 또는 "expression per 1 log2 unit")
+gene_term_label <- function() {
+  if (gene_term() == "group") paste(group_contrast_label(), "expression") else "expression per 1 log2 unit"
+}
+
 # 캡션용 보정 변수 목록 (cfg$cox_covariates → "age (per 10 years), sex and pathologic stage")
 adjust_text <- function(covariates = cfg$cox_covariates) {
   labs <- tolower(unname(term_labels(unname(sapply(covariates, model_term)))))
@@ -135,16 +147,17 @@ zph_rows <- function(fit, gene, model) {
              flag = z$table[, "p"] < 0.05, row.names = NULL)
 }
 
-# 시간 분할 Cox: 다변량 모형과 같은 공변량/환자, 비교 그룹 효과를 0–cut / >cut 구간으로 분리
-# (유전자 그룹 항이 PH 위반일 때만 사용)
-time_split_cox <- function(d, terms, cut, time = "os_months", event = "status") {
+# 시간 분할 Cox: 다변량 모형과 같은 공변량/환자, 유전자 항(비교 그룹 또는 log2 발현) 효과를
+# 0–cut / >cut 구간으로 분리 (유전자 항이 PH 위반일 때만 사용)
+time_split_cox <- function(d, terms, cut, time = "os_months", event = "status", term = gene_term()) {
   # 시간 0인 환자가 있으면 시작점을 그보다 앞으로 (위험집합은 일반 Cox와 동일)
   zero <- if (any(d[[time]] <= 0)) min(d[[time]]) - 1 else 0
   sp <- survSplit(as.formula(paste0("Surv(", time, ", ", event, ") ~ .")), data = d,
                   cut = cut, episode = "period", zero = zero)
-  sp$alt_early <- as.numeric(sp$group == group_alt() & sp$period == 1)
-  sp$alt_late  <- as.numeric(sp$group == group_alt() & sp$period == 2)
-  rhs <- c("alt_early", "alt_late", setdiff(terms, "group"))
+  x <- if (term == "group") as.numeric(sp$group == group_alt()) else sp[[term]]
+  sp$alt_early <- x * (sp$period == 1)
+  sp$alt_late  <- x * (sp$period == 2)
+  rhs <- c("alt_early", "alt_late", setdiff(terms, term))
   fit <- coxph(as.formula(paste0("Surv(tstart, ", time, ", ", event, ") ~ ", paste(rhs, collapse = " + "))),
                data = sp)
   ci <- summary(fit)$conf.int
@@ -155,9 +168,13 @@ time_split_cox <- function(d, terms, cut, time = "os_months", event = "status") 
     hr_late = ci["alt_late", 1], lo_late = ci["alt_late", 3], hi_late = ci["alt_late", 4],
     p_late = co["alt_late", "Pr(>|z|)"])
   ev <- tapply(sp[[event]], list(sp$period, sp$group), sum)
-  msg <- sprintf("PH 위반 → 시간 분할 Cox (%d개월): 0–%d HR %s (사건 기준/비교 %d/%d), >%d HR %s (사건 기준/비교 %d/%d)",
-                 cut, cut, fmt_hr(est$hr_early, est$lo_early, est$hi_early), ev[1, group_ref()], ev[1, group_alt()],
-                 cut, fmt_hr(est$hr_late, est$lo_late, est$hi_late), ev[2, group_ref()], ev[2, group_alt()])
+  ev_txt <- function(k) {
+    if (term == "group") sprintf("사건 기준/비교 %d/%d", ev[k, group_ref()], ev[k, group_alt()])
+    else sprintf("사건 %d, log2 1단위당", sum(ev[k, ]))
+  }
+  msg <- sprintf("PH 위반 → 시간 분할 Cox (%d개월): 0–%d HR %s (%s), >%d HR %s (%s)",
+                 cut, cut, fmt_hr(est$hr_early, est$lo_early, est$hi_early), ev_txt(1),
+                 cut, fmt_hr(est$hr_late, est$lo_late, est$hi_late), ev_txt(2))
   list(est = est, events = ev, msg = msg)
 }
 

@@ -9,6 +9,7 @@ Every setting below lives in `config.R` (the no-hardcoding / audit-grep rule is 
 | `schema$neoadjuvant`, `schema$neoadjuvant_yes` | `"history_neoadjuvant_treatment"`, `"Yes"` | utils `recode_clinical` (01) | Which column and which value (case-insensitive) set `neoadjuvant_flag` |
 | `group_levels` | `c("Low", "High")` | utils, 01–05 | Exposure levels: the 1st is the **reference**, the 2nd is the comparison (above median). Sets the 0/1 mapping (1 = 2nd level), factor order, Cox/KM reference, RMST and time-split arm, DESeq2 contrast and apeglm coefficient, and plot labels. |
 | `reference_levels` | `gender = "Male"`, `pathologic_stage = "I"`, `stage = "I"`, `pathologic_stage_12_34 = "I–II"` | utils `apply_reference_levels` (01) → 03, 04 | Reference level of each categorical covariate |
+| `cox_gene_term` | `"group"` | 04, 06 (via `gene_term()` in R/survival.R) | Gene term in the multivariable, strata and time-split Cox models and the summary/forest HRs: `"group"` = High vs Low, `"continuous"` = log2 expression per 1 unit. KM, log-rank and RMST stay High vs Low |
 | `cox_covariates` | `c("age", "gender", "stage")` | 04 | Multivariable Cox adjustment; also the adjustment in the strata(TSS) and time-split models, and the caption text |
 | `cox_uni_covariates` | `c("age", "gender", "stage", "pathologic_stage_12_34")` | 04 | Covariates in the univariable Cox table |
 | `covariate_scale` | `age = list(by = 10, label = "Age (per 10 years)")` | 04 (via utils `add_scaled_terms`) | Unit of continuous covariates in Cox; the model term becomes `age_per10` |
