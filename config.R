@@ -11,7 +11,7 @@ cfg <- list(
   gene_dir     = "database/gene_files",    # <CANCER>_<split>_<GENE>.csv 위치
   gene_pattern = "^([A-Za-z]+)_(\\d+_\\d+)_(.+)\\.csv$",   # 암종, split, 유전자
   genes_from_gdc = c(),                    # 02a 발현 행렬에서 추가로 가져올 유전자 (예: c("CD8A"))
-  primary_gene = "ROCK2",                  # 주 가설 유전자: BH 보정에서 제외, raw p 보고
+  primary_gene = "HIST1H2AC",                  # 주 가설 유전자: BH 보정에서 제외, raw p 보고
 
   drop_columns = c("rock2g_01"),           # 중복 열 (ROCK2Group과 동일)
 
@@ -37,8 +37,8 @@ cfg <- list(
                               pathologic_stage_12_34 = "I\u2013II"),
 
   # Cox 모형 (04)
-  cox_covariates       = c("age", "gender", "pathologic_stage_12_34", "cea_g"),            # 다변량 보정 변수
-  cox_uni_covariates   = c("age", "gender", "pathologic_stage_12_34", "cea_g"),  # 단변량 표
+  cox_covariates       = c("ageG", "gender", "pathologic_stage_12_34", "cea_g"),            # 다변량 보정 변수
+  cox_uni_covariates   = c("ageG", "gender", "pathologic_stage_12_34", "cea_g"),  # 단변량 표
   covariate_scale      = list(age = list(by = 1, label = "Age (per 10 years)")),  # 연속형 단위
   stage_full           = "stage",                                 # EPV 부족 시 교체될 stage 변수
   stage_collapsed      = "pathologic_stage_12_34",                # 교체 변수 (없으면 stage로 생성)
@@ -64,9 +64,8 @@ cfg <- list(
   gsea_extra_collections = list(           # 기본(Hallmark, Reactome, KEGG, GO:BP) 외 추가 MSigDB 컬렉션
     C8 = list(collection = "C8")           #   C8: 세포 유형 signature (면역/B세포)
   ),
-  gsea_highlight = c("HALLMARK_INTERFERON_GAMMA_RESPONSE", "HALLMARK_ALLOGRAFT_REJECTION",
-                     "REACTOME_SIGNALING_BY_THE_B_CELL_RECEPTOR_BCR",
-                     "KEGG_B_CELL_RECEPTOR_SIGNALING_PATHWAY"),   # 항상 enrichment plot 그릴 경로
+  gsea_highlight = c("HALLMARK_INTERFERON_GAMMA_RESPONSE", "HALLMARK_ALLOGRAFT_REJECTION"
+                     ),   # 항상 enrichment plot 그릴 경로
   gsea_c8_pattern = "B_CELL|PLASMA",       # C8에서 enrichment plot을 그릴 세포 유형 (정규식, padj < 0.05)
   gsea_enrichment_top = 5,                 # enrichment plot: Hallmark 상위 N개 (padj 순) + C8 패턴 상위 N개
   gsea_size    = c(15, 500),               # fgsea minSize, maxSize

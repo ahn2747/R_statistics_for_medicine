@@ -14,7 +14,7 @@ import shutil
 # =====================================================================
 target1 = "READ"
 target2 = "COAD"
-TARGET_GENES = ["ROCK2"]
+TARGET_GENES = ["HIST1H2AC"]
 
 try:
     super_dir = os.path.dirname(os.path.abspath(__file__))
