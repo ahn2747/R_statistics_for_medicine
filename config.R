@@ -11,7 +11,7 @@ cfg <- list(
   gene_dir     = "database/gene_files",    # <CANCER>_<split>_<GENE>.csv 위치
   gene_pattern = "^([A-Za-z]+)_(\\d+_\\d+)_(.+)\\.csv$",   # 암종, split, 유전자
   genes_from_gdc = c(),                    # 02a 발현 행렬에서 추가로 가져올 유전자 (예: c("CD8A"))
-  primary_gene = "MAD2L1",                  # 주 가설 유전자: BH 보정에서 제외, raw p 보고
+  primary_gene = Sys.getenv("MEDIN_GENE", "MAD2L1"),   # 주 가설 유전자: BH 보정에서 제외, raw p 보고 (run_gene.R이 MEDIN_GENE으로 덮어씀)
 
   drop_columns = c("rock2g_01"),           # 중복 열 (ROCK2Group과 동일)
 
@@ -38,8 +38,8 @@ cfg <- list(
 
   # Cox 모형 (04)
   cox_gene_term        = "continuous",          # 다변량/층화/시간 분할 Cox의 유전자 항 (04, 06): "group" = High vs Low, "continuous" = log2 1단위
-  cox_covariates       = c("ageG", "gender", "pathologic_stage_12_34", "cea_g"),            # 다변량 보정 변수
-  cox_uni_covariates   = c("ageG", "gender", "pathologic_stage_12_34", "cea_g"),  # 단변량 표
+  cox_covariates       = c("age_g", "gender", "pathologic_stage_12_34", "cea_g"),            # 다변량 보정 변수 (표준 열 이름; 없으면 04/06 중단)
+  cox_uni_covariates   = c("age_g", "gender", "pathologic_stage_12_34", "cea_g"),  # 단변량 표
   covariate_scale      = list(age = list(by = 1, label = "Age (per 10 years)")),  # 연속형 단위
   stage_full           = "stage",                                 # EPV 부족 시 교체될 stage 변수
   stage_collapsed      = "pathologic_stage_12_34",                # 교체 변수 (없으면 stage로 생성)
@@ -180,7 +180,53 @@ cfg$geo_datasets <- list(
                  exclude_stage = NaN)            # stage IV: 절반이 rfs.delay = 0 (무병 상태 없음) → I–III만
     ),
     factor_levels = list(mmr_status = c("pMMR", "dMMR")),   # 첫 번째 = 기준 수준
+    cox_covariates_drop = c("cea_g"),          # cfg$cox_covariates 중 이 데이터셋에 없는 변수 (CEA 없음) → 모형에서 제외
     extra_covariate = "mmr_status",            # 다변량 + 이 변수 (TCGA에 MSI 결과가 없어서 교란 확인용)
     subgroup = list(var = "mmr_status", level = "pMMR")     # 이 하위군에서 KM/Cox 반복
   )
+)
+
+# ---- 상관분석 (03: <C>_correlation_<GENE>.csv, 양식 Table 2·3) -------------
+# 변수 = 해당 유전자 + genes의 <gene>_expression_log2 + clinical의 연속형 원값 (이름 = 표 라벨)
+cfg$cor_vars <- list(
+  genes    = c("APC", "KRAS", "TP53"),
+  clinical = c(age = "Age", cea_level_pretreatment = "CEA")
+)
+
+# ---- 실행 파일 (run_gene.R) ---------------------------------------------------
+cfg$rscript <- "C:/Program Files/R/R-4.6.1/bin/Rscript.exe"
+cfg$python  <- if (nzchar(Sys.which("python"))) unname(Sys.which("python")) else "py"   # PATH에 python 없으면 py 런처
+
+# ---- 학생연구자료 내보내기 (90_export.R) --------------------------------------
+cfg$export <- list(
+  dest_root  = Sys.getenv("MEDIN_EXPORT_ROOT", "C:/Users/안지훈/Documents/0.학생연구자료"),
+  folder_fmt = paste0("%s(", paste(cfg$cancers, collapse = "&"), ")"),   # %s = 유전자 → "MAD2L1(COAD&READ)"
+  template   = "C:/Users/안지훈/Documents/0.학생연구자료/table양식.docx",   # 읽기 전용
+  fig_ext    = "tiff",
+  table_ext  = "csv",
+  include_de = FALSE,                      # gsea/<G>/de_results.csv (수 MB) 복사 여부
+  exclude    = c("^~[$]", "^_stale$", "^inspect$"),   # 복사 제외 (파일/폴더 이름 정규식)
+  # 출력 패밀리 → 대상 하위 폴더. {G} = 유전자, {coll} = names(cfg$gsea_collections), * = 와일드카드
+  layout = list(
+    tcga = list(
+      firstline = c("table1_{G}", "cox_uni", "cox_multi_{G}", "survival_summary",
+                    "km_summary", "ph_tests", "correlation_{G}"),
+      figure    = c("km_{G}", "forest_multi_{G}")),
+    gsea = list(data   = c("gsea_{coll}", "gsea_summary", "gsea_QC"),
+                figure = c("nes_{coll}", "volcano", "pca", "enrichment_*")),
+    geo  = list(data   = c("cox_*", "km_summary", "survival_summary", "ph_tests", "probe_QC", "pheno_QC"),
+                figure = c("km_*", "forest*"))
+  ),
+  gsea_fdr   = 0.05,                       # key_results: 유의 경로 기준 (padj <)
+  gsea_top   = 3,                          # key_results: NES 상위 경로 수 (양/음 각각)
+  # <G>_tables.docx (양식 채우기)
+  table1_counts_only = TRUE,               # "n (x%)" → n만 (양식 형식)
+  table1_alt_first   = TRUE,               # 열 순서 High | Low (양식 형식; FALSE = group_levels 순서)
+  template_gene      = NULL,               # 양식 캡션 속 유전자 이름 (NULL = Table 1 캡션에서 자동 탐지)
+  caption_fixes      = c(foroverall = "for overall"),   # 양식 캡션 오타 수정 (찾을 문자열 = 바꿀 문자열)
+  # 양식 Table 1 변수 이름 → 파이프라인 변수 (이름이 달라 "양식에만 있는 변수" 보고에서 빼기 위한 대응표)
+  template_aliases   = c(`T stage` = "pathologic_t", `N stage` = "pathologic_n", `M stage` = "pathologic_m"),
+  font_name  = "Times New Roman",          # 양식에서 읽지 못할 때의 기본값
+  font_size  = 10,
+  fig_width  = 6                           # 삽입 KM 그림 폭 (inch)
 )

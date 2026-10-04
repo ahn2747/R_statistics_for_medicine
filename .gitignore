@@ -7,3 +7,5 @@ data/
 .Rhistory
 .RData
 .Rproj.user/
+# 실행 로그 (run_gene.R)
+output/run_logs/

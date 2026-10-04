@@ -17,6 +17,17 @@ suppressPackageStartupMessages({
 # 설정 변수명 → 모형 항 (cfg$covariate_scale에 있는 연속형은 단위 변환, 예: age → age_per10)
 model_term <- function(v) scaled_term(v)
 
+# 설정된 공변량 → 모형 항. 데이터에 없는 항이 있으면 중단 (조용히 빼지 않음)
+covariate_terms <- function(covariates, d, cfg_name, where = "") {
+  terms <- unique(unname(sapply(covariates, model_term)))
+  miss <- setdiff(terms, names(d))
+  if (length(miss)) {
+    stop(where, if (nzchar(where)) ": " else "", "공변량 ", paste(miss, collapse = ", "),
+         "이(가) 데이터에 없음 → cfg$", cfg_name, " 확인 (표준 열 이름, 예: age_g)")
+  }
+  terms
+}
+
 term_labels <- function(terms, gene = NULL) {
   labs <- sapply(terms, function(t) {
     sl <- scaled_label(t)

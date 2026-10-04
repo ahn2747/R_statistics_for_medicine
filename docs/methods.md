@@ -7,10 +7,11 @@ Rules agreed with the user; don't change silently. Setting names are in docs/cov
 
 ## Table 1
 - Wilcoxon for continuous variables; chi-square, switching to Fisher's exact when any expected cell is < 5. Missing values are shown as a row and excluded from the tests.
+- Correlation (03, `correlation_<GENE>.csv`): Pearson r between log2(expression + 1) of the gene and `cfg$cor_vars$genes`, and the raw values of `cfg$cor_vars$clinical` (age, pretreatment CEA), using pairwise complete observations in the gene's Table 1 patients. Exploratory; no multiple-comparison adjustment.
 
 ## Survival (04)
 - **Cox models:**
-  - The multivariable model is the gene term + `cox_covariates` (age per 10 years, gender, stage), as a complete-case analysis.
+  - The multivariable model is the gene term + `cox_covariates` (age group ≤65/≥66, sex, stage I–II/III–IV, pretreatment CEA ≤5/>5 ng/mL), as a complete-case analysis. Before 2026-10-04 the config listed `ageG`, which isn't a canonical column, so age was silently left out of every univariable and multivariable model; 04/06 now stop on a covariate that isn't in the data.
   - **Gene term** (`cfg$cox_gene_term`): `"group"` (default) = High vs Low; `"continuous"` = `<gene>_expression_log2`, HR per 1 log2 unit. It applies to the multivariable, `strata(tss)` and time-split models, to the univariable HR in `survival_summary` and `forest_genes`, and to the PH check that triggers the time-split model. KM, log-rank and RMST always compare High vs Low. The `cox_uni` table always lists both the group and continuous univariable rows. `survival_summary_raw.csv` records the setting in `cox_gene_term`.
   - EPV = events / number of parameters. If EPV < `epv_min`, `stage_12_34` replaces stage I–IV. If EPV is still low, the result is `exploratory = TRUE`; all READ models are (EPV about 5.8).
   - Sensitivity analysis: `strata(tss)`. The expression group is strongly associated with TSS for many genes (`tss_by_group_*.csv`), so report this analysis.
@@ -66,7 +67,7 @@ Methods text:
 - **Models (per endpoint, all tumors):**
   - univariable (group)
   - univariable continuous (per 1 log2 unit)
-  - multivariable with the gene term (`cox_gene_term`, as in 04) + `cox_covariates`, using the same EPV rule as 04 (`build_multi()`)
+  - multivariable with the gene term (`cox_gene_term`, as in 04) + `cox_covariates` minus `cox_covariates_drop` (GSE39582: no CEA), using the same EPV rule as 04 (`build_multi()`). `age_g` is derived from GEO age with the TCGA rule (age > 65 → ≥66).
   - the same multivariable model restricted to patients with known extra covariate
   - multivariable + `extra_covariate` (MMR status), with the gene term × MMR likelihood-ratio interaction test
   - The TCGA direction comparison uses 04's `multi_hr`. It is skipped with a warning if 04 ran with a different `cox_gene_term`.

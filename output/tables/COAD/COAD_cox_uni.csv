@@ -32,6 +32,8 @@
 "MAD2L1 expression","Low (ref)",219,55,"Reference",,
 "","High",220,42,"0.63 (0.42–0.94)","0.024",
 "MAD2L1 expression, log2 (per 1 unit)","",439,97,"0.76 (0.61–0.95)","0.018",
+"Age group, years","≤65 (ref)",184,30,"Reference",,
+"","≥66",255,67,"1.53 (1.00–2.36)","0.052",
 "Sex","Male (ref)",234,53,"Reference",,
 "","Female",205,44,"0.88 (0.59–1.32)","0.549",
 "Pathologic stage group","I–II (ref)",242,32,"Reference",,

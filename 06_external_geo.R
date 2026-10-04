@@ -235,6 +235,23 @@ recode_geo <- function(d, g, gse) {
                                                     names(stage_labels))])
   d$stage <- d$pathologic_stage
 
+  # TCGA .sav에만 있는 그룹 변수 (예: age_g): validates 코호트의 label_rules(source > cutoff → high)와
+  # value_labels로 생성 → cox_covariates를 TCGA와 같은 정의로 사용
+  rules <- rules_for(g$validates)
+  for (v in names(rules)) {
+    r <- rules[[v]]
+    if (v %in% names(d) || !r$source %in% names(d)) next
+    codes <- names(stage_labels[[v]])
+    if (length(codes) != 2 || !r$high %in% codes) {
+      stop(gse, ": ", v, " 생성 불가 — cfg$value_labels_default$", v, "에 high 코드 ", r$high, " 포함 2개 수준 필요")
+    }
+    x <- d[[r$source]]
+    d[[v]] <- ifelse(is.na(x), NA, ifelse(x > r$cutoff, r$high, setdiff(codes, r$high)))
+    d <- apply_value_labels(d, stage_labels[v])
+    cat(sprintf("%s 생성 (%s > %g → %s, cfg$label_rules_default$%s): %s\n", v, r$source, r$cutoff,
+                stage_labels[[v]][[r$high]], v, paste(names(table(d[[v]])), table(d[[v]]), sep = " ", collapse = " / ")))
+  }
+
   # 나머지 범주형 필드 → factor (factor_levels가 있으면 그 순서, 첫 번째 = 기준)
   ep_fields <- unlist(lapply(g$endpoints, function(e) c(e$time, e$event)))
   other <- setdiff(names(g$fields), c("sample_type", "age", "gender", "stage", ep_fields))
@@ -344,7 +361,9 @@ analyze_endpoint <- function(d, ep, g, gse, gene, pop = "All") {
 
   # ---- Cox 모형들 ----
   gt <- gene_term()   # 다변량/시간 분할 모형의 유전자 항 (cfg$cox_gene_term)
-  cov_terms <- intersect(unname(sapply(cfg$cox_covariates, model_term)), names(de))
+  # TCGA cox_covariates 중 이 데이터셋에 없는 변수는 cfg$geo_datasets$<GSE>$cox_covariates_drop에 명시
+  cov_terms <- covariate_terms(setdiff(cfg$cox_covariates, g$cox_covariates_drop), de,
+                               paste0("geo_datasets$", gse, "$cox_covariates_drop / cox_covariates"), paste(gse, tag))
   labs <- term_labels(c("group", "expr_log2", cov_terms, g$extra_covariate, cfg$stage_collapsed), gene)
   rows <- list(); cox_tabs <- list(); zph <- list()
 
@@ -516,6 +535,8 @@ run_geo_validation <- function(gse, cfg_geo) {
   if (!"p_interaction" %in% names(s)) s$p_interaction <- NA
   s$tcga_multi_hr <- if (is.null(tcga)) NA else tcga$multi_hr
   s$direction_match <- if (is.null(tcga)) NA else sign(log(s$hr)) == sign(log(tcga$multi_hr))
+  s$gene          <- gene                              # 90_export.R가 이 유전자의 결과인지 확인
+  s$cox_gene_term <- cfg$cox_gene_term %||% "group"
   created <- c(created, save_table(s, "GEO", "survival_summary_raw.csv", subdir = gse, prefix = gse))
 
   ep_lab <- vapply(g$endpoints, `[[`, "", "label")
@@ -540,7 +561,7 @@ run_geo_validation <- function(gse, cfg_geo) {
       "External validation of ", gene, " expression (", group_contrast_label(), ", median split of probe ", probe,
       " within tumors) in ", g$label, ". HR from Cox regression",
       if (gene_term() != "group") "; multivariable and time-split gene HRs are per 1 log2 unit of expression" else "",
-      "; multivariable models adjusted for ", adjust_text(),
+      "; multivariable models adjusted for ", adjust_text(setdiff(cfg$cox_covariates, g$cox_covariates_drop)),
       if (!is.null(g$extra_covariate)) paste0("; '+ ", model_label_extra(g), "' additionally adjusts for ",
                                               tolower(model_label_extra(g)), " and '(", model_label_extra(g),
                                               " known)' is the model without it on the same patients") else "",
@@ -599,7 +620,7 @@ run_geo_validation <- function(gse, cfg_geo) {
     shape = ifelse(fs$exploratory, "exploratory", "est"))
   created <- c(created, save_fig(
     forest_plot(ft, paste0(gene, " ", gene_term_label(), " — ", g$label),
-                paste0("Probe ", probe, "; multivariable models adjusted for ", adjust_text())),
+                paste0("Probe ", probe, "; multivariable models adjusted for ", adjust_text(setdiff(cfg$cox_covariates, g$cox_covariates_drop)))),
     "GEO", "forest", width = 13, height = 1.6 + 0.35 * nrow(ft), subdir = gse, prefix = gse))
 
   # 전체 공변량 forest (종점별, 가장 많이 보정한 모형)

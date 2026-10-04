@@ -5,7 +5,8 @@
 #   - 범주형: chi-square (기대빈도 < 5 셀이 있으면 Fisher's exact로 자동 전환)
 #   - 결측은 "Missing" 행으로 표시, p-value 계산에서는 제외
 # 입력: data/processed/<CANCER>_merged.rds
-# 결과 (파일명 앞에 <CANCER>_): output/tables/<CANCER>/table1_<GENE>.{docx,csv}, table1_overall.{docx,csv}
+# 결과 (파일명 앞에 <CANCER>_): output/tables/<CANCER>/table1_<GENE>.{docx,csv}, table1_overall.{docx,csv},
+#       correlation_<GENE>.csv (Pearson, 유전자 + cfg$cor_vars, pairwise complete)
 # =============================================================
 
 source("config.R")
@@ -96,6 +97,17 @@ for (cancer in cfg$cancers) {
   genes <- detect_genes(df)
   cat("변수", length(vars), "개:", paste(vars, collapse = ", "), "\n")
 
+  # 상관분석 변수 (cfg$cor_vars): 없는 유전자/임상 변수는 경고 후 제외
+  cor_genes <- toupper(cfg$cor_vars$genes)
+  cor_gene_ok <- paste0(gene_key(cor_genes), "_expression_log2") %in% names(df)
+  cor_clin <- cfg$cor_vars$clinical
+  cor_clin_ok <- names(cor_clin) %in% names(df)
+  if (!all(cor_gene_ok) || !all(cor_clin_ok)) {
+    warning(cancer, ": 상관분석 변수 없음 (제외): ",
+            paste(c(cor_genes[!cor_gene_ok], names(cor_clin)[!cor_clin_ok]), collapse = ", "),
+            " (cfg$cor_vars)", call. = FALSE)
+  }
+
   # ---- 전체 코호트 ----
   tbl <- make_summary(df, vars) |>
     modify_caption(paste0("Table 1. Clinical characteristics of the TCGA-", cancer,
@@ -136,10 +148,16 @@ for (cancer in cfg$cancers) {
     created <- c(created, save_table(tss_df, cancer, paste0(sv, "_by_group_", gene, ".csv")))
     cat(sprintf("           %s × 그룹: %d개 수준, p = %s (%s)\n",
                 toupper(sv), nrow(tss_df), fmt_p(test$p.value), test$method))
+
+    # ---- Pearson 상관 (유전자 + cfg$cor_vars, log2 발현 / 임상 원값, Table 1과 같은 환자) ----
+    cg <- unique(c(gene, cor_genes[cor_gene_ok]))
+    cor_v <- c(setNames(paste0(gene_key(cg), "_expression_log2"), cg),
+               setNames(names(cor_clin)[cor_clin_ok], unname(cor_clin[cor_clin_ok])))
+    created <- c(created, save_table(cor_matrix(d, cor_v), cancer, paste0("correlation_", gene, ".csv")))
   }
 
   # 더 이상 없는 유전자의 이전 결과 → _stale/
-  move_stale_outputs(cancer, c("table1_", paste0(cfg$strata_var, "_by_group_")), created)
+  move_stale_outputs(cancer, c("table1_", paste0(cfg$strata_var, "_by_group_"), "correlation_"), created)
 }
 
 cat("\n생성된 파일 (", length(created), "개):\n", paste0("  ", created, collapse = "\n"), "\n", sep = "")

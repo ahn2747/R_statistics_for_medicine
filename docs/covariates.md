@@ -10,8 +10,8 @@ Every setting below lives in `config.R` (the no-hardcoding / audit-grep rule is 
 | `group_levels` | `c("Low", "High")` | utils, 01–05 | Exposure levels: the 1st is the **reference**, the 2nd is the comparison (above median). Sets the 0/1 mapping (1 = 2nd level), factor order, Cox/KM reference, RMST and time-split arm, DESeq2 contrast and apeglm coefficient, and plot labels. |
 | `reference_levels` | `gender = "Male"`, `pathologic_stage = "I"`, `stage = "I"`, `pathologic_stage_12_34 = "I–II"` | utils `apply_reference_levels` (01) → 03, 04 | Reference level of each categorical covariate |
 | `cox_gene_term` | `"group"` | 04, 06 (via `gene_term()` in R/survival.R) | Gene term in the multivariable, strata and time-split Cox models and the summary/forest HRs: `"group"` = High vs Low, `"continuous"` = log2 expression per 1 unit. KM, log-rank and RMST stay High vs Low |
-| `cox_covariates` | `c("age", "gender", "stage")` | 04 | Multivariable Cox adjustment; also the adjustment in the strata(TSS) and time-split models, and the caption text |
-| `cox_uni_covariates` | `c("age", "gender", "stage", "pathologic_stage_12_34")` | 04 | Covariates in the univariable Cox table |
+| `cox_covariates` | `c("age_g", "gender", "pathologic_stage_12_34", "cea_g")` | 04, 06 | Multivariable Cox adjustment; also the adjustment in the strata(TSS) and time-split models, and the caption text. Use canonical column names (`age_g`, not the .sav's `ageG`): a name that isn't in the data stops 04/06 (`covariate_terms()` in R/survival.R) instead of being dropped silently |
+| `cox_uni_covariates` | `c("age_g", "gender", "pathologic_stage_12_34", "cea_g")` | 04 | Covariates in the univariable Cox table (a missing name stops 04, as above) |
 | `covariate_scale` | `age = list(by = 10, label = "Age (per 10 years)")` | 04 (via utils `add_scaled_terms`) | Unit of continuous covariates in Cox; the model term becomes `age_per10` |
 | `stage_full`, `stage_collapsed` | `"stage"`, `"pathologic_stage_12_34"` | 04; utils (creates the collapsed column if it's missing) | Stage term that is swapped for the collapsed one when EPV < `epv_min` |
 | `epv_min` | `10` | 04 | EPV threshold for collapsing stage, then for the exploratory flag |
@@ -33,6 +33,8 @@ Every setting below lives in `config.R` (the no-hardcoding / audit-grep rule is 
 | `geo_datasets$<GSE>$endpoints` | OS (primary), RFS | 06 | time/event fields, `time_unit`, `event_value`, label, `exclude_stage` (RFS: stage IV) |
 | `geo_datasets$<GSE>$factor_levels` | `mmr_status = c("pMMR", "dMMR")` | 06 | Allowed values and order (1st = reference). An unlisted value stops the run. |
 | `geo_datasets$<GSE>$extra_covariate` | `"mmr_status"` | 06 | Added to `cox_covariates` in the "+ MMR" model; also the group × covariate LRT |
+| `geo_datasets$<GSE>$cox_covariates_drop` | `"cea_g"` | 06 | `cox_covariates` that this dataset doesn't have (GSE39582 has no CEA). They are left out of every GEO model and caption; any other missing covariate stops 06 |
+| (derived in 06) | `label_rules_default` of the `validates` cohort | 06 | Group covariates that exist only in the TCGA .sav (e.g. `age_g`) are built from the GEO source column with the same rule and labels (`age > 65` → ≥66) |
 | `geo_datasets$<GSE>$subgroup` | `mmr_status == "pMMR"` | 06 | KM and Cox repeated in this subgroup |
 | `geo_datasets$<GSE>$validates` | `"COAD"` | 06 | TCGA cohort for the stage labels and the HR direction comparison |
 

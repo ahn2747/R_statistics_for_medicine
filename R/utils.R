@@ -622,6 +622,25 @@ check_median_split <- function(expr, group, tol = cfg$median_tie_tolerance) {
              median_split_pass = n_diff <= tol)
 }
 
+# ---- 상관분석 (03, 양식 Table 2·3) ----------------------------------------
+
+# Pearson 상관, 변수쌍마다 결측 제외 (pairwise complete). vars = 이름 있는 열 이름 벡터 (이름 = 라벨)
+# → long 형식 (var1, var2, r, p, n), 모든 순서쌍 + 대각선 (r = 1, p = NA). 다중비교 미보정 (탐색적)
+cor_matrix <- function(df, vars) {
+  labs <- names(vars)
+  out <- expand.grid(i = seq_along(vars), j = seq_along(vars))
+  res <- t(mapply(function(i, j) {
+    x <- df[[vars[i]]]
+    y <- df[[vars[j]]]
+    ok <- !is.na(x) & !is.na(y)
+    if (i == j) return(c(1, NA, sum(ok)))
+    if (sum(ok) < 3) return(c(NA, NA, sum(ok)))
+    ct <- stats::cor.test(x[ok], y[ok], method = "pearson")
+    c(unname(ct$estimate), ct$p.value, sum(ok))
+  }, out$i, out$j))
+  data.frame(var1 = labs[out$i], var2 = labs[out$j], r = res[, 1], p = res[, 2], n = as.integer(res[, 3]))
+}
+
 # <CANCER>_<split>_<GENE>.csv → sample_id, expression, group, csv_status(0/1)
 read_gene_file <- function(path) {
   parts <- str_match(basename(path), cfg$gene_pattern)

@@ -4,17 +4,21 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+import argparse
+import hashlib
 import re
 import os
+import sys
 import time
 import shutil
 
 # =====================================================================
-# 디렉토리 설정 (분석 파이프라인과 동일한 구조 유지)
+# 사용법: py csv_download.py GENE [GENE ...] [--cancers COAD READ]
+#   OncoLnc 50/50 split CSV → database/gene_files/<CANCER>_50_50_<GENE>.csv
+#   같은 이름 파일이 있으면 md5 비교: 같으면 건너뜀, 다르면 덮어쓰지 않고 실패 처리
+#   하나라도 실패하면 종료 코드 1 (run_gene.R이 중단)
 # =====================================================================
-target1 = "READ"
-target2 = "COAD"
-TARGET_GENES = ["MAD2L1"]
+DEFAULT_CANCERS = ["COAD", "READ"]
 
 try:
     super_dir = os.path.dirname(os.path.abspath(__file__))
@@ -73,9 +77,17 @@ def wait_for_download(timeout=30):
         seconds += 1
     return None
 
+def md5(path):
+    h = hashlib.md5()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
 def download_gene_data(driver, gene, cancer_type):
     """
     특정 유전자와 암종에 대한 p-value를 추출하고 CSV 파일을 다운로드합니다.
+    반환: (p-value 또는 None, 오류 메시지 또는 None)
     """
     # 대기 시간 10초로 원복
     wait = WebDriverWait(driver, 10) 
@@ -98,8 +110,9 @@ def download_gene_data(driver, gene, cancer_type):
         try:
             btn = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_btn)))
         except TimeoutException:
-            print(f"  [안내] {gene} - {cancer_type}: 해당 유전자가 DB에 없거나 검색 속도가 너무 느립니다.")
-            return None
+            msg = f"{gene} - {cancer_type}: 해당 유전자가 DB에 없거나 검색 속도가 너무 느립니다."
+            print(f"  [오류] {msg}")
+            return None, msg
             
         # 새 탭(target="_blank") 열림 방지
         form_element = btn.find_element(By.XPATH, "..")
@@ -141,56 +154,81 @@ def download_gene_data(driver, gene, cancer_type):
             src_path = os.path.join(temp_download_dir, downloaded_file)
             new_filename = f"{cancer_type}_50_50_{gene}.csv"
             dst_path = os.path.join(target_dir, new_filename)
-            
+
+            # 같은 이름 파일: md5가 같으면 건너뜀, 다르면 덮어쓰지 않음 (database/는 입력 데이터)
+            if os.path.exists(dst_path):
+                if md5(src_path) == md5(dst_path):
+                    os.unlink(src_path)
+                    print(f"  └─ 기존 파일과 동일 (건너뜀) -> {dst_path}")
+                    return p_val, None
+                msg = (f"{dst_path}이(가) 이미 있고 새로 받은 파일과 내용이 다름 → 덮어쓰지 않음 "
+                       f"(기존 파일을 확인 후 직접 옮기거나 지우고 다시 실행)")
+                print(f"  [오류] {msg}")
+                return p_val, msg
             shutil.move(src_path, dst_path)
             print(f"  └─ CSV 다운로드 완료 -> {dst_path}")
-            return p_val
+            return p_val, None
         else:
-            print(f"  [오류] {gene}: CSV 다운로드 시간 초과")
-            return p_val
+            msg = f"{gene} - {cancer_type}: CSV 다운로드 시간 초과"
+            print(f"  [오류] {msg}")
+            return p_val, msg
 
     except Exception as e:
-        print(f"  [오류] {gene} - {cancer_type}: 예기치 못한 에러 발생 -> {e}")
-        return None
+        msg = f"{gene} - {cancer_type}: 예기치 못한 에러 발생 -> {e}"
+        print(f"  [오류] {msg}")
+        return None, msg
+
+def parse_args():
+    ap = argparse.ArgumentParser(description="OncoLnc 50/50 split CSV 다운로드")
+    ap.add_argument("genes", nargs="+", help="유전자 기호 (여러 개 가능)")
+    ap.add_argument("--cancers", nargs="+", default=DEFAULT_CANCERS,
+                    help="TCGA 암종 코드 (기본: %(default)s)")
+    return ap.parse_args()
 
 def main():
-    gene_list = TARGET_GENES
+    args = parse_args()
+    genes = [g.upper() for g in args.genes]
+    cancers = [c.upper() for c in args.cancers]
     significant_genes = []
-    
-    print("=== 웹 스크래핑 및 자동 다운로드를 시작합니다 ===\n")
+    failures = []
+
+    print("=== 웹 스크래핑 및 자동 다운로드를 시작합니다 ===")
+    print(f"유전자: {', '.join(genes)} / 암종: {', '.join(cancers)}\n")
     driver = setup_driver()
-    
+
     try:
-        for gene in gene_list:
+        for gene in genes:
             print(f"\n▶ 유전자 탐색 및 다운로드 중: {gene}")
-            
-            
-            # target1 추출 및 파일 다운로드
-            target1_p = download_gene_data(driver, gene, f"{target1}")
-            if target1_p is not None:
-                print(f"  └─ p-value 추출 -> {target1}: {target1_p}")
-            
-            # target2 추출 및 파일 다운로드
-            target2_p = download_gene_data(driver, gene, f"{target2}")
-            if target2_p is not None:
-                print(f"  └─ p-value 추출 -> {target2}: {target2_p}")
-            
-            # 둘 다 0.05 이하인 경우 기록
-            if target1_p is not None and target2_p is not None:
-                if target1_p <= 0.05 and target2_p <= 0.05:
-                    significant_genes.append((gene, target1_p, target2_p))
-                    
+            pvals = {}
+            for cancer in cancers:
+                p, err = download_gene_data(driver, gene, cancer)
+                if err:
+                    failures.append(err)
+                if p is not None:
+                    pvals[cancer] = p
+                    print(f"  └─ p-value 추출 -> {cancer}: {p}")
+
+            # 모든 암종에서 0.05 이하인 경우 기록
+            if len(pvals) == len(cancers) and all(p <= 0.05 for p in pvals.values()):
+                significant_genes.append((gene, pvals))
+
     finally:
         driver.quit()
         if os.path.exists(temp_download_dir):
             shutil.rmtree(temp_download_dir)
-        
+
     print("\n" + "="*50)
-    print("  === 양쪽 모두 유의미한(p<=0.05) 유전자 목록 ===")
+    print(f"  === 모든 암종({', '.join(cancers)})에서 유의미한(p<=0.05) 유전자 목록 ===")
     print("="*50)
-    for g in significant_genes:
-        print(f"Gene: {g[0]} | {target1}: {g[1]} | {target2}: {g[2]}")
+    for gene, pvals in significant_genes:
+        print(f"Gene: {gene} | " + " | ".join(f"{c}: {p}" for c, p in pvals.items()))
     print("="*50)
+
+    if failures:
+        print(f"\n실패 ({len(failures)}건):")
+        for f in failures:
+            print(f"  - {f}")
+        sys.exit(1)
     print("스크래핑 완료! 이제 분석 파이프라인 코드를 실행하세요.")
 
 if __name__ == "__main__":

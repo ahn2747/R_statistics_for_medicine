@@ -73,7 +73,7 @@ analyze_gene <- function(g, base, cancer, uni_cov_terms) {
   zph <- zph_rows(fit_u, gene, "univariable")
 
   # ---- 3. 다변량 Cox (EPV 확인 후 stage 변수 결정) ----
-  cov_terms <- intersect(unname(sapply(cfg$cox_covariates, model_term)), names(d))
+  cov_terms <- covariate_terms(cfg$cox_covariates, d, "cox_covariates", cancer)
   m <- build_multi(d, c(gt, cov_terms))
   stage_used   <- m$stage_used
   stage_levels <- m$stage_levels
@@ -189,10 +189,7 @@ for (cancer in cfg$cancers) {
   cat("생존 정보 있는 환자", nrow(base), "명, 사건", sum(base$status), "건 / 유전자", length(genes), "개\n")
 
   # ---- 단변량 Cox: 임상 공변량 ----
-  uni_cov_terms <- unique(unname(sapply(cfg$cox_uni_covariates, model_term)))
-  missing_cov <- setdiff(uni_cov_terms, names(base))
-  if (length(missing_cov)) cat("없는 공변량 (건너뜀):", paste(missing_cov, collapse = ", "), "\n")
-  uni_cov_terms <- intersect(uni_cov_terms, names(base))
+  uni_cov_terms <- covariate_terms(cfg$cox_uni_covariates, base, "cox_uni_covariates", cancer)
   uni_cov <- do.call(rbind, lapply(uni_cov_terms, function(t) {
     dt <- complete_cases(base, t)
     cat(sprintf("  단변량 %-24s n = %d, 사건 %d\n", t, nrow(dt), sum(dt$status)))
