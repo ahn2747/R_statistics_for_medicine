@@ -67,6 +67,7 @@ Methods text:
 - **Models (per endpoint, all tumors):**
   - univariable (group)
   - univariable continuous (per 1 log2 unit)
+  - univariable, one model per clinical covariate (`cox_uni_covariates` minus `cox_covariates_drop`, plus `extra_covariate` in all tumors; each on its own complete cases, as in 04). These appear only in the `cox_<EP>` tables, not in the summary, forest plot or key results
   - multivariable with the gene term (`cox_gene_term`, as in 04) + `cox_covariates` minus `cox_covariates_drop` (GSE39582: no CEA), using the same EPV rule as 04 (`build_multi()`). `age_g` is derived from GEO age with the TCGA rule (age > 65 → ≥66).
   - the same multivariable model restricted to patients with known extra covariate
   - multivariable + `extra_covariate` (MMR status), with the gene term × MMR likelihood-ratio interaction test

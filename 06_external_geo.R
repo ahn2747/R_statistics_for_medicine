@@ -5,7 +5,7 @@
 #   2. probe → 유전자: 매칭 probe 전부 QC, cfg$geo_probe_rule로 하나 선택
 #   3. characteristics_ch1 파싱 → config fields 매핑, 비종양 샘플 제외
 #   4. 종양 샘플 내 median split (cfg$group_levels, 첫 번째 = 기준)
-#   5. 종점별 (첫 번째 = 주 종점): KM + log-rank, 단변량 Cox, 다변량 Cox (EPV),
+#   5. 종점별 (첫 번째 = 주 종점): KM + log-rank, 단변량 Cox (유전자 + 임상 변수별), 다변량 Cox (EPV),
 #      다변량 + extra_covariate (MMR), 하위군 (pMMR), cox.zph
 #   6. TCGA 결과와 방향 비교 (validates 코호트의 survival_summary_raw.csv)
 # 사용: Rscript 06_external_geo.R [GSE39582 ...]   (인자 없으면 cfg$geo_datasets 전체)
@@ -364,7 +364,13 @@ analyze_endpoint <- function(d, ep, g, gse, gene, pop = "All") {
   # TCGA cox_covariates 중 이 데이터셋에 없는 변수는 cfg$geo_datasets$<GSE>$cox_covariates_drop에 명시
   cov_terms <- covariate_terms(setdiff(cfg$cox_covariates, g$cox_covariates_drop), de,
                                paste0("geo_datasets$", gse, "$cox_covariates_drop / cox_covariates"), paste(gse, tag))
-  labs <- term_labels(c("group", "expr_log2", cov_terms, g$extra_covariate, cfg$stage_collapsed), gene)
+  # 임상 변수 단변량 (04와 같은 cfg$cox_uni_covariates; 없는 변수는 cox_covariates_drop, 하위군에서는 extra 제외)
+  uni_terms <- covariate_terms(setdiff(cfg$cox_uni_covariates, g$cox_covariates_drop), de,
+                               paste0("geo_datasets$", gse, "$cox_covariates_drop / cox_uni_covariates"), paste(gse, tag))
+  if (!is.null(g$extra_covariate) && pop == "All" && g$extra_covariate %in% names(de)) {
+    uni_terms <- c(uni_terms, g$extra_covariate)
+  }
+  labs <- term_labels(unique(c("group", "expr_log2", cov_terms, uni_terms, g$extra_covariate, cfg$stage_collapsed)), gene)
   rows <- list(); cox_tabs <- list(); zph <- list()
 
   add_model <- function(name, m, key_term = gt, keep_table = FALSE) {
@@ -393,6 +399,15 @@ analyze_endpoint <- function(d, ep, g, gse, gene, pop = "All") {
 
   add_model("Univariable", simple("group"), key_term = "group")
   add_model("Univariable, continuous (per 1 log2 unit)", simple("expr_log2"), key_term = "expr_log2")
+  # 임상 변수 단변량: Cox 표에만 (요약/forest/key_results는 유전자 항 기준, 04의 cox_uni와 같은 방식)
+  uni_cov <- bind_rows(lapply(uni_terms, function(t) {
+    dt <- complete_cases(de, t)
+    cat(sprintf("  [%s] 단변량 %-24s n = %d, 사건 %d\n", tag, t, nrow(dt), sum(dt[[event]])))
+    cox_rows(fit_cox(dt, t, time = time, event = event), dt, t, labs[t], event = event)
+  }))
+  if (nrow(uni_cov)) {
+    cox_tabs[["Univariable, clinical"]] <- data.frame(Model = "Univariable", format_cox(uni_cov), check.names = FALSE)
+  }
 
   m <- build_multi(de, c(gt, cov_terms), event = event)
   add_model("Multivariable", m, keep_table = is.null(g$extra_covariate) || pop != "All")

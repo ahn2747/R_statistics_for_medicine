@@ -51,7 +51,7 @@
   - `pheno_QC.csv`: every mapped field with its raw key, n, missing and values, plus usable n/events per endpoint
   - `survival_summary.{docx,csv}` and `survival_summary_raw.csv`: one row per endpoint × population × model. Includes EPV, PH p for the gene term, the interaction p (+ extra-covariate model), log-rank p, RMST, and the direction compared with the TCGA multivariable HR. The raw file also records `gene` and `cox_gene_term`, which 90_export.R checks before copying GEO results.
   - `km_summary.{docx,csv}`: median and 3-/5-year survival by group, plus log-rank p
-  - `cox_<EP>.{docx,csv}` and `cox_<EP>_<subgroup>`: every covariate row of every model
+  - `cox_<EP>.{docx,csv}` and `cox_<EP>_<subgroup>`: every covariate row of every model, including one univariable model per clinical covariate (Model = "Univariable")
   - `ph_tests.csv`: cox.zph for every model
 - `output/figures/GEO/<GSE>/`: `km_<EP>`, `km_<EP>_<subgroup>`, `forest` (gene HR across all models) and `forest_multi_<EP>` (all covariates of the most-adjusted model)
 - `inspect/` (from `test_geo_inspect.R`) is left alone.
