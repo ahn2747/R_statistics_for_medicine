@@ -177,7 +177,7 @@ cfg$geo_datasets <- list(
                  label = "Overall survival"),
       RFS = list(time = "rfs_time", event = "rfs_event", time_unit = "months", event_value = 1,
                  label = "Relapse-free survival",
-                 exclude_stage = NaN)            # stage IV: 절반이 rfs.delay = 0 (무병 상태 없음) → I–III만
+                 exclude_stage = 4)              # stage IV: 절반이 rfs.delay = 0 (무병 상태 없음) → I–III만
     ),
     factor_levels = list(mmr_status = c("pMMR", "dMMR")),   # 첫 번째 = 기준 수준
     cox_covariates_drop = c("cea_g"),          # cfg$cox_covariates 중 이 데이터셋에 없는 변수 (CEA 없음) → 모형에서 제외
