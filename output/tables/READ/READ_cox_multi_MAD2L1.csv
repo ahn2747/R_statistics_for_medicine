@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"MAD2L1 expression, log2 (per 1 unit)","",103,13,"0.70 (0.33–1.48)","0.350",
+"Sex","Male (ref)",62,9,"Reference",,
+"","Female",41,4,"0.76 (0.23–2.51)","0.656",
+"Pathologic stage group","I–II (ref)",50,5,"Reference",,
+"","III–IV",53,8,"1.54 (0.48–4.95)","0.465",
+"Pretreatment CEA","≤5 ng/mL (ref)",61,7,"Reference",,
+"",">5 ng/mL",42,6,"1.51 (0.46–4.93)","0.498",

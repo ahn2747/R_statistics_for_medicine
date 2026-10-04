@@ -1,51 +1,51 @@
 ﻿"endpoint","population","gene","model","term","chisq","df","p","flag"
-"OS","All","HIST1H2AC","Univariable","group",0.426,1,0.5141,FALSE
-"OS","All","HIST1H2AC","Univariable","GLOBAL",0.426,1,0.5141,FALSE
-"OS","All","HIST1H2AC","Univariable, continuous (per 1 log2 unit)","expr_log2",0.605,1,0.4369,FALSE
-"OS","All","HIST1H2AC","Univariable, continuous (per 1 log2 unit)","GLOBAL",0.605,1,0.4369,FALSE
-"OS","All","HIST1H2AC","Multivariable","expr_log2",0.605,1,0.4368,FALSE
-"OS","All","HIST1H2AC","Multivariable","gender",0.1,1,0.7513,FALSE
-"OS","All","HIST1H2AC","Multivariable","pathologic_stage_12_34",4.35,1,0.03701,TRUE
-"OS","All","HIST1H2AC","Multivariable","GLOBAL",4.751,3,0.1909,FALSE
-"OS","All","HIST1H2AC","Multivariable (MMR status known)","expr_log2",1.031,1,0.31,FALSE
-"OS","All","HIST1H2AC","Multivariable (MMR status known)","gender",0.401,1,0.5267,FALSE
-"OS","All","HIST1H2AC","Multivariable (MMR status known)","pathologic_stage_12_34",2.562,1,0.1095,FALSE
-"OS","All","HIST1H2AC","Multivariable (MMR status known)","GLOBAL",3.612,3,0.3065,FALSE
-"OS","All","HIST1H2AC","Multivariable + MMR status","expr_log2",1.034,1,0.3093,FALSE
-"OS","All","HIST1H2AC","Multivariable + MMR status","gender",0.391,1,0.5317,FALSE
-"OS","All","HIST1H2AC","Multivariable + MMR status","pathologic_stage_12_34",2.539,1,0.1111,FALSE
-"OS","All","HIST1H2AC","Multivariable + MMR status","mmr_status",0.774,1,0.3791,FALSE
-"OS","All","HIST1H2AC","Multivariable + MMR status","GLOBAL",4.88,4,0.2998,FALSE
-"OS","pMMR","HIST1H2AC","Univariable","group",0.417,1,0.5184,FALSE
-"OS","pMMR","HIST1H2AC","Univariable","GLOBAL",0.417,1,0.5184,FALSE
-"OS","pMMR","HIST1H2AC","Univariable, continuous (per 1 log2 unit)","expr_log2",0.66,1,0.4165,FALSE
-"OS","pMMR","HIST1H2AC","Univariable, continuous (per 1 log2 unit)","GLOBAL",0.66,1,0.4165,FALSE
-"OS","pMMR","HIST1H2AC","Multivariable","expr_log2",0.706,1,0.4007,FALSE
-"OS","pMMR","HIST1H2AC","Multivariable","gender",1.121,1,0.2897,FALSE
-"OS","pMMR","HIST1H2AC","Multivariable","pathologic_stage_12_34",3.855,1,0.04959,TRUE
-"OS","pMMR","HIST1H2AC","Multivariable","GLOBAL",5.111,3,0.1638,FALSE
-"RFS","All","HIST1H2AC","Univariable","group",4.186,1,0.04077,TRUE
-"RFS","All","HIST1H2AC","Univariable","GLOBAL",4.186,1,0.04077,TRUE
-"RFS","All","HIST1H2AC","Univariable, continuous (per 1 log2 unit)","expr_log2",1.765,1,0.1839,FALSE
-"RFS","All","HIST1H2AC","Univariable, continuous (per 1 log2 unit)","GLOBAL",1.765,1,0.1839,FALSE
-"RFS","All","HIST1H2AC","Multivariable","expr_log2",1.646,1,0.1995,FALSE
-"RFS","All","HIST1H2AC","Multivariable","gender",3.893,1,0.04849,TRUE
-"RFS","All","HIST1H2AC","Multivariable","pathologic_stage_12_34",5.137,1,0.02342,TRUE
-"RFS","All","HIST1H2AC","Multivariable","GLOBAL",10.23,3,0.01671,TRUE
-"RFS","All","HIST1H2AC","Multivariable (MMR status known)","expr_log2",1.225,1,0.2683,FALSE
-"RFS","All","HIST1H2AC","Multivariable (MMR status known)","gender",3.958,1,0.04666,TRUE
-"RFS","All","HIST1H2AC","Multivariable (MMR status known)","pathologic_stage_12_34",4.567,1,0.0326,TRUE
-"RFS","All","HIST1H2AC","Multivariable (MMR status known)","GLOBAL",9.359,3,0.02488,TRUE
-"RFS","All","HIST1H2AC","Multivariable + MMR status","expr_log2",1.277,1,0.2584,FALSE
-"RFS","All","HIST1H2AC","Multivariable + MMR status","gender",3.717,1,0.05387,FALSE
-"RFS","All","HIST1H2AC","Multivariable + MMR status","pathologic_stage_12_34",4.286,1,0.03842,TRUE
-"RFS","All","HIST1H2AC","Multivariable + MMR status","mmr_status",0.097,1,0.756,FALSE
-"RFS","All","HIST1H2AC","Multivariable + MMR status","GLOBAL",9.054,4,0.05975,FALSE
-"RFS","pMMR","HIST1H2AC","Univariable","group",3.482,1,0.06202,FALSE
-"RFS","pMMR","HIST1H2AC","Univariable","GLOBAL",3.482,1,0.06202,FALSE
-"RFS","pMMR","HIST1H2AC","Univariable, continuous (per 1 log2 unit)","expr_log2",1.322,1,0.2502,FALSE
-"RFS","pMMR","HIST1H2AC","Univariable, continuous (per 1 log2 unit)","GLOBAL",1.322,1,0.2502,FALSE
-"RFS","pMMR","HIST1H2AC","Multivariable","expr_log2",1.014,1,0.314,FALSE
-"RFS","pMMR","HIST1H2AC","Multivariable","gender",3.547,1,0.05965,FALSE
-"RFS","pMMR","HIST1H2AC","Multivariable","pathologic_stage_12_34",4.537,1,0.03316,TRUE
-"RFS","pMMR","HIST1H2AC","Multivariable","GLOBAL",8.622,3,0.03476,TRUE
+"OS","All","MAD2L1","Univariable","group",3.016,1,0.08243,FALSE
+"OS","All","MAD2L1","Univariable","GLOBAL",3.016,1,0.08243,FALSE
+"OS","All","MAD2L1","Univariable, continuous (per 1 log2 unit)","expr_log2",1.734,1,0.1879,FALSE
+"OS","All","MAD2L1","Univariable, continuous (per 1 log2 unit)","GLOBAL",1.734,1,0.1879,FALSE
+"OS","All","MAD2L1","Multivariable","expr_log2",1.464,1,0.2264,FALSE
+"OS","All","MAD2L1","Multivariable","gender",0.087,1,0.7681,FALSE
+"OS","All","MAD2L1","Multivariable","pathologic_stage_12_34",4.04,1,0.04444,TRUE
+"OS","All","MAD2L1","Multivariable","GLOBAL",5.386,3,0.1456,FALSE
+"OS","All","MAD2L1","Multivariable (MMR status known)","expr_log2",1.484,1,0.2232,FALSE
+"OS","All","MAD2L1","Multivariable (MMR status known)","gender",0.402,1,0.5263,FALSE
+"OS","All","MAD2L1","Multivariable (MMR status known)","pathologic_stage_12_34",2.355,1,0.1249,FALSE
+"OS","All","MAD2L1","Multivariable (MMR status known)","GLOBAL",3.949,3,0.267,FALSE
+"OS","All","MAD2L1","Multivariable + MMR status","expr_log2",1.492,1,0.2218,FALSE
+"OS","All","MAD2L1","Multivariable + MMR status","gender",0.394,1,0.5301,FALSE
+"OS","All","MAD2L1","Multivariable + MMR status","pathologic_stage_12_34",2.347,1,0.1255,FALSE
+"OS","All","MAD2L1","Multivariable + MMR status","mmr_status",0.767,1,0.3813,FALSE
+"OS","All","MAD2L1","Multivariable + MMR status","GLOBAL",5.402,4,0.2485,FALSE
+"OS","pMMR","MAD2L1","Univariable","group",3.553,1,0.05942,FALSE
+"OS","pMMR","MAD2L1","Univariable","GLOBAL",3.553,1,0.05942,FALSE
+"OS","pMMR","MAD2L1","Univariable, continuous (per 1 log2 unit)","expr_log2",1.79,1,0.1809,FALSE
+"OS","pMMR","MAD2L1","Univariable, continuous (per 1 log2 unit)","GLOBAL",1.79,1,0.1809,FALSE
+"OS","pMMR","MAD2L1","Multivariable","expr_log2",1.526,1,0.2168,FALSE
+"OS","pMMR","MAD2L1","Multivariable","gender",1.12,1,0.29,FALSE
+"OS","pMMR","MAD2L1","Multivariable","pathologic_stage_12_34",3.67,1,0.0554,FALSE
+"OS","pMMR","MAD2L1","Multivariable","GLOBAL",5.753,3,0.1243,FALSE
+"RFS","All","MAD2L1","Univariable","group",2.193,1,0.1386,FALSE
+"RFS","All","MAD2L1","Univariable","GLOBAL",2.193,1,0.1386,FALSE
+"RFS","All","MAD2L1","Univariable, continuous (per 1 log2 unit)","expr_log2",2.782,1,0.09536,FALSE
+"RFS","All","MAD2L1","Univariable, continuous (per 1 log2 unit)","GLOBAL",2.782,1,0.09536,FALSE
+"RFS","All","MAD2L1","Multivariable","expr_log2",3.707,1,0.05418,FALSE
+"RFS","All","MAD2L1","Multivariable","gender",4.085,1,0.04325,TRUE
+"RFS","All","MAD2L1","Multivariable","pathologic_stage_12_34",4.874,1,0.02726,TRUE
+"RFS","All","MAD2L1","Multivariable","GLOBAL",12.654,3,0.005447,TRUE
+"RFS","All","MAD2L1","Multivariable (MMR status known)","expr_log2",3.899,1,0.04832,TRUE
+"RFS","All","MAD2L1","Multivariable (MMR status known)","gender",4.2,1,0.04043,TRUE
+"RFS","All","MAD2L1","Multivariable (MMR status known)","pathologic_stage_12_34",4.413,1,0.03567,TRUE
+"RFS","All","MAD2L1","Multivariable (MMR status known)","GLOBAL",12.446,3,0.006002,TRUE
+"RFS","All","MAD2L1","Multivariable + MMR status","expr_log2",3.716,1,0.053900000000000003,FALSE
+"RFS","All","MAD2L1","Multivariable + MMR status","gender",3.913,1,0.04793,TRUE
+"RFS","All","MAD2L1","Multivariable + MMR status","pathologic_stage_12_34",4.203,1,0.04035,TRUE
+"RFS","All","MAD2L1","Multivariable + MMR status","mmr_status",0.091,1,0.7624,FALSE
+"RFS","All","MAD2L1","Multivariable + MMR status","GLOBAL",11.82,4,0.01874,TRUE
+"RFS","pMMR","MAD2L1","Univariable","group",1.831,1,0.176,FALSE
+"RFS","pMMR","MAD2L1","Univariable","GLOBAL",1.831,1,0.176,FALSE
+"RFS","pMMR","MAD2L1","Univariable, continuous (per 1 log2 unit)","expr_log2",2.507,1,0.1133,FALSE
+"RFS","pMMR","MAD2L1","Univariable, continuous (per 1 log2 unit)","GLOBAL",2.507,1,0.1133,FALSE
+"RFS","pMMR","MAD2L1","Multivariable","expr_log2",3.122,1,0.07723,FALSE
+"RFS","pMMR","MAD2L1","Multivariable","gender",3.723,1,0.05366,FALSE
+"RFS","pMMR","MAD2L1","Multivariable","pathologic_stage_12_34",4.505,1,0.03379,TRUE
+"RFS","pMMR","MAD2L1","Multivariable","GLOBAL",11.303,3,0.0102,TRUE

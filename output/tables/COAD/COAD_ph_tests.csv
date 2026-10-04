@@ -69,3 +69,10 @@
 "HIST1H2AC","multivariable","pathologic_stage_12_34",2.502,1,0.1137,FALSE
 "HIST1H2AC","multivariable","cea_g",0.026,1,0.8709,FALSE
 "HIST1H2AC","multivariable","GLOBAL",4.447,4,0.3489,FALSE
+"MAD2L1","univariable","expr_log2",0.02,1,0.8867,FALSE
+"MAD2L1","univariable","GLOBAL",0.02,1,0.8867,FALSE
+"MAD2L1","multivariable","expr_log2",0.775,1,0.3788,FALSE
+"MAD2L1","multivariable","gender",1.458,1,0.2272,FALSE
+"MAD2L1","multivariable","pathologic_stage_12_34",2.577,1,0.1084,FALSE
+"MAD2L1","multivariable","cea_g",0.013,1,0.909,FALSE
+"MAD2L1","multivariable","GLOBAL",4.329,4,0.3633,FALSE
