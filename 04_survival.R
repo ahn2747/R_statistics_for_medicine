@@ -25,10 +25,10 @@ surv_base <- function(df) {
 
 # ---- 유전자 1개 분석 ---------------------------------------------------
 
-analyze_gene <- function(g, base, cancer, uni_cov_terms) {
+analyze_gene <- function(g, base, cancer, uni_cov_terms, data_txt) {
   gene <- toupper(g)
   res  <- list(summary = data.frame(gene = gene), files = character(),
-               uni = NULL, multi = NULL, zph = NULL, km = NULL)
+               uni = NULL, multi = NULL, zph = NULL, km = NULL, info = NULL, models = NULL)
 
   d <- base
   d$group     <- d[[paste0(g, "_group")]]
@@ -94,12 +94,20 @@ analyze_gene <- function(g, base, cancer, uni_cov_terms) {
   mg <- multi[multi$term == gt & !multi$reference, ]
 
   tab_m <- format_cox(multi)
-  res$files <- c(res$files, save_df_table(
+  f_m <- save_df_table(
     tab_m, cancer, paste0("cox_multi_", gene),
     caption = paste0("Multivariable Cox regression for overall survival: ", gene,
                      " expression, TCGA-", cancer,
                      " (n = ", nrow(m$d), ", events = ", m$events, ", EPV = ",
-                     sprintf("%.1f", epv), if (exploratory) "; exploratory" else "", ")")))
+                     sprintf("%.1f", epv), if (exploratory) "; exploratory" else "", ")"))
+  res$files <- c(res$files, f_m)
+  res$info <- list(
+    Output = f_m[grepl("\\.csv$", f_m)], Analysis = "Multivariable Cox regression (complete case)",
+    Model = formula(fit_m),
+    Settings = c("cox_gene_term", "cox_covariates", "epv_min", "stage_full", "stage_collapsed",
+                 paste0("stage_used=", stage_used), sprintf("epv=%.1f", epv), paste0("exploratory=", exploratory)),
+    n = sprintf("n=%d (missing excluded %d); events=%d", nrow(m$d), dropped, m$events),
+    Data = data_txt, Packages = "survival")
   res$files <- c(res$files, save_fig(
     forest_plot(multi, paste0("Multivariable Cox: ", gene, " expression — TCGA-", cancer),
                 paste0("n = ", nrow(m$d), ", events = ", m$events, ", EPV = ", sprintf("%.1f", epv),
@@ -112,6 +120,7 @@ analyze_gene <- function(g, base, cancer, uni_cov_terms) {
   fit_s <- fit_cox(ds, m$terms, strata = "strata_grp")
   sg <- cox_rows(fit_s, ds, m$terms, term_labels(m$terms, gene))
   sg <- sg[sg$term == gt & !sg$reference, ]
+  res$models <- list(uni = formula(fit_u), multi = formula(fit_m), strata = formula(fit_s))
 
   # ---- 5. 비례위험 그림 (위반 모형만) ----
   res$zph <- zph
@@ -196,10 +205,22 @@ for (cancer in cfg$cancers) {
     cox_rows(fit_cox(dt, t), dt, t, term_labels(t))
   }))
 
+  # ---- 분석 정보용 데이터 출처: .sav (md5) + 유전자별 발현 출처 (02b merge_QC) ----
+  sav_txt <- sprintf("%s (md5 %s)", basename(sav_path(cancer)), unname(tools::md5sum(sav_path(cancer))))
+  mq_f <- file.path(out_dir(cancer, "tables"), out_file(cancer, "merge_QC.csv"))
+  mq <- if (file.exists(mq_f)) read.csv(mq_f, stringsAsFactors = FALSE) else NULL
+  expr_src <- function(gene) {
+    f <- mq$file[mq$gene == gene & startsWith(mq$action, "merged")]
+    if (length(f)) f[1] else basename(sav_path(cancer))
+  }
+  src_all <- vapply(toupper(genes), expr_src, "")
+  data_all <- c(sav_txt, paste0("expression: ", paste(sprintf("%s = %s", names(src_all), src_all), collapse = ", ")))
+
   # ---- 유전자별 ----
   results <- list()
   for (g in genes) {
-    r <- tryCatch(analyze_gene(g, base, cancer, uni_cov_terms), error = function(e) {
+    r <- tryCatch(analyze_gene(g, base, cancer, uni_cov_terms,
+                               c(sav_txt, paste0("expression: ", expr_src(toupper(g))))), error = function(e) {
       failures <<- c(failures, paste0(cancer, " ", toupper(g), ": ", conditionMessage(e)))
       cat("  !!", toupper(g), "실패:", conditionMessage(e), "\n")
       list(summary = data.frame(gene = toupper(g), note = paste("failed:", conditionMessage(e))),
@@ -321,6 +342,51 @@ for (cancer in cfg$cancers) {
       forest_plot(fg_tab, paste0("Multivariable Cox: gene expression — TCGA-", cancer), sub),
       cancer, "forest_genes", width = 9, height = 1.6 + 0.35 * nrow(fg_tab)))
   }
+
+  # ---- 분석 정보 (출력 CSV별 → <C>_analysis_info_04.csv) ----
+  # 모형식은 첫 번째로 분석된 유전자의 실제 fit에서 (항 구성은 모든 유전자에서 같음)
+  mods <- Filter(Negate(is.null), lapply(results, `[[`, "models"))
+  fs   <- function(f) paste(deparse(f, width.cutoff = 500L), collapse = " ")
+  mdl  <- if (length(mods)) lapply(mods[[1]], fs) else list(uni = NA, multi = NA, strata = NA)
+  lhs  <- if (length(mods)) fs(mods[[1]]$multi[[2]]) else NA
+  n_all <- sprintf("n=%d; events=%d (%d genes)", nrow(base), sum(base$status), nrow(s))
+  tau_notes <- unique(s$note[!is.na(s$note) & nzchar(s$note)])
+  surv_settings <- c("primary_gene", "group_levels", "cox_gene_term", "cox_uni_covariates", "cox_covariates",
+                     "epv_min", "stage_full", "stage_collapsed", "min_events", "strata_var", "collapse_small_levels",
+                     "ph_split_months", "rmst_tau", "km_times", if (length(tau_notes)) paste0("note=", tau_notes))
+  surv_model <- c(paste0("KM + log-rank: ", lhs, " ~ group"),
+                  paste0("univariable: ", mdl$uni), paste0("multivariable: ", mdl$multi),
+                  paste0("stratified: ", mdl$strata), "cox.zph",
+                  paste0("time-split (gene-term PH violation only): survSplit at ph_split_months, ",
+                         "Surv(tstart, ...) ~ gene term early + late + covariates"),
+                  paste0("RMST: survRM2::rmst2 (", group_contrast_label(), ")"),
+                  "BH: p.adjust(method = \"BH\") across exploratory genes")
+  tab_path <- function(name) file.path(out_dir(cancer, "tables"), out_file(cancer, name))
+  info <- c(
+    unname(Filter(Negate(is.null), lapply(results, `[[`, "info"))),
+    list(
+      list(Output = tab_path("survival_summary_raw.csv"),
+           Analysis = "Overall survival summary per gene: KM/log-rank, univariable, multivariable and stratified Cox, cox.zph, time-split Cox, RMST, BH q",
+           Model = surv_model, Settings = surv_settings, n = n_all, Data = data_all,
+           Packages = c("survival", "survRM2")),
+      list(Output = tab_path("survival_summary.csv"),
+           Analysis = "Formatted overall survival summary per gene (from survival_summary_raw)",
+           Model = surv_model, Settings = surv_settings, n = n_all, Data = data_all,
+           Packages = c("survival", "survRM2")),
+      list(Output = tab_path("km_summary.csv"), Analysis = "Kaplan–Meier estimates by expression group",
+           Model = paste0("survfit(", lhs, " ~ group)"), Settings = c("group_levels", "km_times"),
+           n = n_all, Data = data_all, Packages = "survival"),
+      list(Output = tab_path("cox_uni.csv"), Analysis = "Univariable Cox regression (one model per term, complete case)",
+           Model = c(paste0(lhs, " ~ <term>"),
+                     paste0("terms: group, expr_log2 (", nrow(s), " genes), ", paste(uni_cov_terms, collapse = ", "))),
+           Settings = c("group_levels", "cox_uni_covariates", "reference_levels"),
+           n = sprintf("n=%d; events=%d (%d genes; complete cases per model)", nrow(base), sum(base$status), nrow(s)), Data = data_all, Packages = "survival"),
+      list(Output = tab_path("ph_tests.csv"), Analysis = "Proportional hazards test (Schoenfeld residuals)",
+           Model = c(paste0("cox.zph(", mdl$uni, ")"), paste0("cox.zph(", mdl$multi, ")")),
+           Settings = c("cox_gene_term", "cox_covariates"), n = n_all, Data = data_all, Packages = "survival")))
+  info <- Filter(function(r) normalizePath(r$Output, winslash = "/", mustWork = FALSE) %in%
+                   normalizePath(created, winslash = "/", mustWork = FALSE), info)
+  created <- c(created, write_analysis_info(info, cancer, "04"))
 
   # ---- 더 이상 없는 유전자의 이전 결과 → _stale/ ----
   move_stale_outputs(cancer, c("km_", "forest_multi_", "zph_", "cox_multi_"), created)

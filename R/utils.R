@@ -157,6 +157,41 @@ save_fig <- function(plot, cancer, stem, width = 7, height = 6, dpi = 300, subdi
   c(pdf, tif)
 }
 
+# 출력 CSV별 분석 정보 → <prefix>_analysis_info_<script>.csv (한 행 = 출력 CSV 하나)
+# rows: list(Output = 경로, Analysis, Model, Settings, n, Data, Packages)의 목록
+#   Settings: "="가 없으면 cfg 키 → 실행 중 cfg 값, "k=v"는 실행 중 값 그대로
+#   Packages: 패키지 이름 → "<pkg> <버전>" + R 버전
+# 실행 시각/git 해시는 넣지 않음 (재실행 시 같은 파일)
+write_analysis_info <- function(rows, cancer, script, subdir = NULL, prefix = cancer) {
+  fmt_val <- function(x) {
+    if (is.null(x)) return("NULL")
+    if (is.list(x)) {   # 중첩 목록/벡터는 괄호로 (예: cor_vars=genes:(APC,KRAS),clinical:(age:Age))
+      x <- vapply(x, function(v) if (length(v) > 1 || !is.null(names(v))) paste0("(", fmt_val(v), ")") else fmt_val(v), "")
+    }
+    if (!is.null(names(x)) && all(nzchar(names(x)))) x <- paste0(names(x), ":", x)
+    paste(x, collapse = ",")
+  }
+  fmt_settings <- function(s) {
+    paste(vapply(s, function(k) if (grepl("=", k, fixed = TRUE)) k else paste0(k, "=", fmt_val(cfg[[k]])), ""),
+          collapse = "; ")
+  }
+  fmt_pkgs <- function(p) {
+    paste(c(vapply(p, function(k) paste(k, as.character(utils::packageVersion(k))), ""),
+            paste0("R ", R.version$major, ".", R.version$minor)), collapse = "; ")
+  }
+  # Model: 문자열 또는 formula (목록 가능) → 한 줄
+  fmt_model <- function(m) {
+    if (inherits(m, "formula")) m <- list(m)
+    paste(vapply(m, function(x) if (inherits(x, "formula")) paste(deparse(x, width.cutoff = 500L), collapse = " ")
+                 else as.character(x), ""), collapse = "; ")
+  }
+  df <- do.call(rbind, lapply(rows, function(r) data.frame(
+    Output = basename(r$Output), Analysis = r$Analysis, Model = fmt_model(r$Model),
+    Settings = fmt_settings(r$Settings), n = r$n, Data = paste(r$Data, collapse = "; "),
+    Packages = fmt_pkgs(r$Packages), stringsAsFactors = FALSE)))
+  save_table(df, cancer, paste0("analysis_info_", script, ".csv"), subdir, prefix)
+}
+
 # 이번 실행에서 만들지 않은 결과 파일(<prefix>_<prefixes>로 시작; NULL = 모든 파일) → <dir>/_stale/
 # <prefix>_로 시작하지 않는 이전 이름 형식 파일도 함께 이동
 # (삭제하지 않고 이동; Word 잠금 파일 ~$* 와 하위 폴더는 무시)

@@ -14,6 +14,7 @@
   - 04: `km_`, `forest_multi_`, `zph_`, `cox_multi_`
   - 06 (under `GEO/<GSE>/`): `km_`, `forest`, `cox_`, `zph_`
 - `move_stale_dirs()`: gene subfolders under `gsea/` that aren't in the current run are moved to `gsea/_stale/`.
+- `write_analysis_info()`: 03–06 each write `analysis_info_<NN>.csv` (03/04 under `output/tables/<C>/`, 05 under `gsea/<GENE>/`, 06 under `GEO/<GSE>/`): one row per output CSV with Output, Analysis, Model (formulas from the fitted objects, design, tests), Settings (`cfg` values; keys without `=` are read from `cfg`), n, Data (.sav md5, gene CSV, GDC/MSigDB release, GSE/GPL/probe) and Packages (`packageVersion()` + R). No run time or git hash, so a rerun on the same inputs gives the same file; the existing CSVs are unchanged.
 
 ## 02a outputs (`data/processed/`, not under `output/`, no prefix rule)
 - `<C>_counts.rds`, `<C>_se.rda` and `database/TCGA_<C>_RNAseq_Expression.csv` (the existing data files; see docs/data_flow.md)
@@ -60,10 +61,10 @@
 ## Export to the student folder (`90_export.R`, settings in `cfg$export`)
 `Rscript 90_export.R [GENE] [--dry-run]` copies one gene's finished outputs (GENE defaults to `cfg$primary_gene`) into `<dest_root>/<folder_fmt % GENE>/`, e.g. `0.학생연구자료/MAD2L1(COAD&READ)/`. Shared helpers are in `R/export.R`.
 - **Layout** (`cfg$export$layout`; patterns use `{G}` = gene, `{coll}` = each `cfg$gsea_collections` name, `*` = wildcard, without the `<prefix>_` and extension):
-  - `firstline/`: 03/04 CSVs (`table1_{G}`, `cox_uni`, `cox_multi_{G}`, `survival_summary`, `km_summary`, `ph_tests`, `correlation_{G}`)
+  - `firstline/`: 03/04 CSVs (`table1_{G}`, `cox_uni`, `cox_multi_{G}`, `survival_summary`, `km_summary`, `ph_tests`, `correlation_{G}`, `analysis_info_03`, `analysis_info_04`)
   - `figure/`: `km_{G}`, `forest_multi_{G}` TIFFs
-  - `gsea/data/`, `gsea/figure/`: from `gsea/<GENE>/` (`de_results` only if `include_de = TRUE`)
-  - `geo/<GSE>_<validates>/data|figure/`: 06 outputs, only when the GEO results belong to this gene
+  - `gsea/data/`, `gsea/figure/`: from `gsea/<GENE>/` (incl. `analysis_info_05`) (`de_results` only if `include_de = TRUE`)
+  - `geo/<GSE>_<validates>/data|figure/`: 06 outputs (incl. `analysis_info_06`), only when the GEO results belong to this gene
   - Only `fig_ext` (TIFF) and `table_ext` (CSV) files are copied. `table1_overall`, `forest_genes`, PDFs and the per-table .docx files are not. `~$*` lock files, `_stale/` and `inspect/` are excluded (`cfg$export$exclude`).
 - **Checks** (stop with the script to rerun): the gene is in every `<C>_merged.rds`; every TCGA pattern has a file (`table1_`/`correlation_` → 03, the rest → 04). Outputs older than `<C>_merged.rds` give a warning. A missing `gsea/<GENE>/` skips GSEA with a warning (and notes a `gsea/_stale/<GENE>/` copy, which is never used). GEO is copied only if `survival_summary_raw.csv`'s `gene` column (or, for old files, the chosen probe's symbol in `probe_QC.csv`) equals GENE; otherwise it is skipped with a "rerun 06 with MEDIN_GENE=<GENE>" note.
 - **Copy rule:** names are kept. If the destination exists with the same content md5 (for .docx, the md5 of the zip entries without `docProps/core.xml`) the file is `same` and skipped; otherwise the old file is moved to `_old/<YYYYMMDD_HHMM>/<relative path>` (never deleted) and replaced. Files in the destination that aren't in the plan (manuscripts, manual files) are not touched. Copy failures are listed at the end and the exit code is 1. `--dry-run` prints the plan (new / same / replace / skip + reason) and changes nothing.

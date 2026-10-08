@@ -108,11 +108,28 @@ for (cancer in cfg$cancers) {
             " (cfg$cor_vars)", call. = FALSE)
   }
 
+  # ---- 분석 정보 (출력 CSV별 → <C>_analysis_info_03.csv) ----
+  info <- list()
+  sav_txt <- sprintf("%s (md5 %s)", basename(sav_path(cancer)), unname(tools::md5sum(sav_path(cancer))))
+  mq_f <- file.path(out_dir(cancer, "tables"), out_file(cancer, "merge_QC.csv"))
+  mq <- if (file.exists(mq_f)) read.csv(mq_f, stringsAsFactors = FALSE) else NULL
+  expr_src <- function(gene) {   # 발현 출처: 02b에서 병합한 gene CSV, 없으면 .sav
+    f <- mq$file[mq$gene == gene & startsWith(mq$action, "merged")]
+    if (length(f)) f[1] else basename(sav_path(cancer))
+  }
+  t1_settings <- c("table1_vars", "table1_continuous", "analysis_na_values")
+  csv_of <- function(f) f[grepl("\\.csv$", f)]
+
   # ---- 전체 코호트 ----
   tbl <- make_summary(df, vars) |>
     modify_caption(paste0("Table 1. Clinical characteristics of the TCGA-", cancer,
                           " cohort (N = ", nrow(df), ")"))
-  created <- c(created, save_tbl(tbl, cancer, "table1_overall"))
+  f <- save_tbl(tbl, cancer, "table1_overall")
+  created <- c(created, f)
+  info[[length(info) + 1]] <- list(
+    Output = csv_of(f), Analysis = "Descriptive statistics (whole cohort)",
+    Model = "median [IQR] (continuous); n (%) (categorical); no test", Settings = t1_settings,
+    n = paste0("n=", nrow(df)), Data = sav_txt, Packages = "gtsummary")
 
   # ---- 유전자별 ----
   for (g in genes) {
@@ -131,7 +148,16 @@ for (cancer in cfg$cancers) {
       modify_spanning_header(c(stat_1, stat_2) ~ paste0("**", gene, " expression**")) |>
       modify_caption(paste0("Table 1. Clinical characteristics of TCGA-", cancer,
                             " patients by ", gene, " expression"))
-    created <- c(created, save_tbl(tbl, cancer, paste0("table1_", gene)))
+    f <- save_tbl(tbl, cancer, paste0("table1_", gene))
+    created <- c(created, f)
+    tests <- unique(test_column(tbl))
+    info[[length(info) + 1]] <- list(
+      Output = csv_of(f), Analysis = paste0("Clinical characteristics by ", gene, " expression group"),
+      Model = c(paste0("~ ", grp, " (", paste(cfg$group_levels, collapse = " / "), ")"), sort(tests[nzchar(tests)])),
+      Settings = c(t1_settings, "group_levels"),
+      n = sprintf("n=%d (%s %d / %s %d)", nrow(d), group_ref(), sum(d[[grp]] == group_ref()),
+                  group_alt(), sum(d[[grp]] == group_alt())),
+      Data = c(sav_txt, paste0("expression: ", expr_src(gene))), Packages = c("gtsummary", "stats"))
 
     # ---- 층화 변수(기본 TSS) × 발현 그룹 (배치/기관 효과 점검) ----
     sv  <- cfg$strata_var
@@ -145,7 +171,13 @@ for (cancer in cfg$cancers) {
     tss_df <- tss_df[order(-tss_df$Total), ]
     tss_df$`p-value` <- c(fmt_p(test$p.value), rep("", nrow(tss_df) - 1))
     tss_df$Test      <- c(test$method, rep("", nrow(tss_df) - 1))
-    created <- c(created, save_table(tss_df, cancer, paste0(sv, "_by_group_", gene, ".csv")))
+    f <- save_table(tss_df, cancer, paste0(sv, "_by_group_", gene, ".csv"))
+    created <- c(created, f)
+    info[[length(info) + 1]] <- list(
+      Output = f, Analysis = paste0(toupper(sv), " × expression group cross-tabulation"),
+      Model = paste0("table(", sv, ", ", grp, "); ", test$method), Settings = c("strata_var", "group_levels"),
+      n = sprintf("n=%d; %d levels", sum(tss_df$Total), nrow(tss_df)),
+      Data = c(sav_txt, paste0("expression: ", expr_src(gene))), Packages = "stats")
     cat(sprintf("           %s × 그룹: %d개 수준, p = %s (%s)\n",
                 toupper(sv), nrow(tss_df), fmt_p(test$p.value), test$method))
 
@@ -153,8 +185,18 @@ for (cancer in cfg$cancers) {
     cg <- unique(c(gene, cor_genes[cor_gene_ok]))
     cor_v <- c(setNames(paste0(gene_key(cg), "_expression_log2"), cg),
                setNames(names(cor_clin)[cor_clin_ok], unname(cor_clin[cor_clin_ok])))
-    created <- c(created, save_table(cor_matrix(d, cor_v), cancer, paste0("correlation_", gene, ".csv")))
+    cm <- cor_matrix(d, cor_v)
+    f <- save_table(cm, cancer, paste0("correlation_", gene, ".csv"))
+    created <- c(created, f)
+    info[[length(info) + 1]] <- list(
+      Output = f, Analysis = "Pearson correlation",
+      Model = paste0("cor.test(method = \"pearson\"), pairwise complete; variables: ",
+                     paste(sprintf("%s = %s", names(cor_v), cor_v), collapse = ", ")),
+      Settings = "cor_vars",
+      n = sprintf("n=%d (pairwise n %d–%d)", nrow(d), min(cm$n), max(cm$n)),
+      Data = c(sav_txt, paste0("expression: ", paste(sprintf("%s = %s", cg, vapply(cg, expr_src, "")), collapse = ", "))), Packages = "stats")
   }
+  created <- c(created, write_analysis_info(info, cancer, "03"))
 
   # 더 이상 없는 유전자의 이전 결과 → _stale/
   move_stale_outputs(cancer, c("table1_", paste0(cfg$strata_var, "_by_group_"), "correlation_"), created)

@@ -62,6 +62,11 @@ cat("MSigDB 유전자 세트 불러오는 중...\n")
 gene_sets <- lapply(collection_specs, load_gene_sets)
 for (k in names(gene_sets)) cat(sprintf("  %-9s %-18s %5d sets\n", k, attr(gene_sets[[k]], "source"), length(gene_sets[[k]])))
 
+# 분석 정보용 MSigDB release: msigdbr 캐시 파일 이름 (msigdb.<release>.Hs.*.rds)
+msigdb_release <- unique(sub("^msigdb\\.(.+)\\.Hs\\..*$", "\\1",
+                             list.files(tools::R_user_dir("msigdbr", "cache"), pattern = "^msigdb\\..+\\.Hs\\..+\\.rds$")))
+if (!length(msigdb_release)) msigdb_release <- "unknown (msigdbr cache not found)"
+
 # MSigDB .chip: 옛/별칭 기호(Probe Set ID) → 현재 MSigDB 기호(Gene Symbol)
 chip_file <- list.files(cfg$clinical_dir, pattern = "\\.chip$", full.names = TRUE)[1]
 if (is.na(chip_file)) stop("database/ 에 MSigDB .chip 파일 없음")
@@ -213,7 +218,7 @@ enrichment_plot <- function(genes, ranks, row, coll) {
 
 # ---- 유전자 1개 ---------------------------------------------------------
 
-analyze_gene <- function(g, cancer, cnt, merged, gdc_expr) {
+analyze_gene <- function(g, cancer, cnt, merged, gdc_expr, data_txt) {
   gene <- toupper(g)
   sub  <- file.path("gsea", gene)
   files <- character()
@@ -276,12 +281,15 @@ analyze_gene <- function(g, cancer, cnt, merged, gdc_expr) {
               nrow(dds), as.numeric(difftime(Sys.time(), t0, units = "mins")),
               if (n_apeglm_warn) sprintf(" (apeglm 경고 %d건 억제)", n_apeglm_warn) else ""))
   saveRDS(dds, processed_path(cancer, paste0("dds_", gene, ".rds")))
+  design_main <- design(dds)
+  n_dds <- nrow(dds)
 
   de <- data.frame(symbol = rownames(res), baseMean = res$baseMean, log2FC = res$log2FoldChange,
                    lfcSE = res$lfcSE, stat = res$stat, pvalue = res$pvalue, padj = res$padj,
                    log2FC_shrunk = shr$log2FoldChange)
   de <- de[order(de$pvalue), ]
-  files <- c(files, save_table(de, cancer, "de_results.csv", sub))
+  f_de <- save_table(de, cancer, "de_results.csv", sub)
+  files <- c(files, f_de)
 
   # PCA는 dds가 필요하므로 여기서 그리고 dds/vst를 바로 해제 (메모리)
   files <- c(files, save_fig(pca_plot(dds, gene, cancer), cancer, "pca", 12, 5, subdir = sub))
@@ -308,6 +316,7 @@ analyze_gene <- function(g, cancer, cnt, merged, gdc_expr) {
   res0 <- results(dds0, contrast = c("group", group_alt(), group_ref()), parallel = TRUE, BPPARAM = bp)
   cat(sprintf("           DESeq2 민감도 (~ %s): %.1f분\n", paste(c(covs0, "group"), collapse = " + "),
               as.numeric(difftime(Sys.time(), t0, units = "mins"))))
+  design_sens <- design(dds0)
   rm(dds0)
   gc(verbose = FALSE)
 
@@ -320,6 +329,7 @@ analyze_gene <- function(g, cancer, cnt, merged, gdc_expr) {
 
   # ---- GSEA (컬렉션별) ----
   all_res <- list()
+  f_gs <- list()
   for (coll in names(gene_sets)) {
     t0 <- Sys.time()
     tab  <- run_fgsea(gene_sets[[coll]], ranks)
@@ -344,7 +354,8 @@ analyze_gene <- function(g, cancer, cnt, merged, gdc_expr) {
     cat(sprintf("           GSEA %-9s padj<0.05 %4d개 (공변량 없이도 유지 %d), %.1f분\n", coll, n_sig,
                 sum(tab$robust_no_covariate %in% TRUE),
                 as.numeric(difftime(Sys.time(), t0, units = "mins"))))
-    files <- c(files, save_table(tab, cancer, paste0("gsea_", coll, ".csv"), sub))
+    f_gs[[coll]] <- save_table(tab, cancer, paste0("gsea_", coll, ".csv"), sub)
+    files <- c(files, f_gs[[coll]])
     if (coll == "Hallmark" || n_sig > 0) {
       nt <- min(20, if (n_sig) n_sig else 20)
       files <- c(files, save_fig(nes_plot(tab, coll, gene, cancer), cancer, paste0("nes_", coll),
@@ -397,7 +408,7 @@ analyze_gene <- function(g, cancer, cnt, merged, gdc_expr) {
                `Leading edge (top 10)` = le, check.names = FALSE)
   }))
   if (is.null(summ)) summ <- data.frame(Collection = names(gene_sets), Pathway = "No pathway with padj < 0.05")
-  files <- c(files, save_df_table(
+  f_sum <- save_df_table(
     summ, cancer, "gsea_summary", landscape = TRUE, font_size = 7, subdir = sub,
     caption = paste0("GSEA of ", gene, " ", group_contrast_label(), " expression, TCGA-", cancer,
                      " (DESeq2 Wald statistic, design ~ ", paste(c(covs, "group"), collapse = " + "),
@@ -405,8 +416,42 @@ analyze_gene <- function(g, cancer, cnt, merged, gdc_expr) {
                      if (any(names(gene_sets) != "Hallmark")) "other collections: top 10 by padj; " else "",
                      "all padj < 0.05. Positive NES = enriched in ", group_alt(), ". ",
                      "Robust = same direction and padj < 0.05 with design ~ ",
-                     paste(c(cfg$gsea_sensitivity_covariates, "group"), collapse = " + "), ".")))
-  files <- c(files, save_table(qc, cancer, "gsea_QC.csv", sub))
+                     paste(c(cfg$gsea_sensitivity_covariates, "group"), collapse = " + "), "."))
+  files <- c(files, f_sum)
+  f_qc <- save_table(qc, cancer, "gsea_QC.csv", sub)
+  files <- c(files, f_qc)
+
+  # ---- 분석 정보 (출력 CSV별 → gsea/<GENE>/<C>_analysis_info_05.csv) ----
+  # move_stale_outputs(NULL) 전에 저장해야 _stale/로 옮겨지지 않음
+  n_txt  <- sprintf("n=%d (%s %d / %s %d)", length(ids), group_ref(), n_grp[[group_ref()]],
+                    group_alt(), n_grp[[group_alt()]])
+  contrast_txt <- paste0("contrast = group ", group_alt(), " vs ", group_ref())
+  de_model <- list(design_main, paste0("DESeq2 Wald test, ", contrast_txt),
+                   "lfcShrink(type = \"apeglm\") for log2FC_shrunk",
+                   "pre-filter: count >= 10 in >= smaller-group n samples")
+  gs_settings <- c("gsea_size", "eps=0", "seed", "gsea_collections", "gsea_design_covariates",
+                   "gsea_sensitivity_covariates", "collapse_small_levels")
+  gs_model <- list("fgseaMultilevel on DESeq2 Wald stat (.chip remapping, duplicates averaged)",
+                   design_main, paste("robust_no_covariate design", paste(deparse(design_sens), collapse = " ")))
+  gs_pkgs <- c("DESeq2", "fgsea", "msigdbr", "BiocParallel")
+  info <- c(
+    list(list(Output = f_de, Analysis = "Differential expression (DESeq2)", Model = de_model,
+              Settings = c("gsea_design_covariates", "collapse_small_levels", "group_levels", "n_cores"),
+              n = sprintf("%s; genes tested=%d", n_txt, n_dds), Data = data_txt,
+              Packages = c("DESeq2", "apeglm", "BiocParallel"))),
+    lapply(names(f_gs), function(coll) list(
+      Output = f_gs[[coll]], Analysis = paste0("GSEA (", coll, ", ", attr(gene_sets[[coll]], "source"), ")"),
+      Model = gs_model, Settings = gs_settings,
+      n = sprintf("%s; ranked genes=%d; pathways tested=%d", n_txt, length(ranks), nrow(all_res[[coll]])),
+      Data = data_txt, Packages = gs_pkgs)),
+    list(list(Output = f_sum[grepl("\\.csv$", f_sum)], Analysis = "GSEA summary (top pathways, padj < 0.05)",
+              Model = c("Hallmark: top 5 up / top 5 down by NES; other collections: top 10 by padj", gs_model),
+              Settings = gs_settings, n = n_txt, Data = data_txt, Packages = gs_pkgs),
+         list(Output = f_qc, Analysis = "GSEA input QC (sample matching, GDC vs .sav expression, gene rank)",
+              Model = c("Spearman correlation GDC log2(TPM+1) vs .sav expression; median split agreement",
+                        "rank of the gene by DESeq2 Wald stat"),
+              Settings = c("group_levels"), n = n_txt, Data = data_txt, Packages = c("DESeq2", "stats"))))
+  files <- c(files, write_analysis_info(info, cancer, "05", subdir = sub))
   move_stale_outputs(cancer, NULL, files, subdir = sub)
 
   list(files = files,
@@ -445,9 +490,18 @@ for (cancer in cfg$cancers) {
     rownames(gdc_expr) <- m$Gene
   }
 
+  # 분석 정보용 데이터 버전: GDC release (02a provenance), MSigDB release, .chip, 그룹 출처
+  prov_f <- processed_path(cancer, "gdc_provenance.json")
+  gdc_rel <- if (file.exists(prov_f)) jsonlite::read_json(prov_f)$gdc_data_release$release else NULL
+  data_txt <- c(paste0("counts: ", basename(f_cnt), " (GDC STAR - Counts, ",
+                       gdc_rel %||% paste("release unknown:", basename(prov_f), "missing"), ")"),
+                paste0("groups: <gene>_group in ", basename(processed_path(cancer, "merged.rds"))),
+                paste0("MSigDB ", paste(msigdb_release, collapse = ","), ".Hs (msigdbr)"),
+                paste0("chip: ", basename(chip_file)))
+
   results <- list()
   for (g in genes) {
-    r <- tryCatch(analyze_gene(g, cancer, cnt, merged, gdc_expr), error = function(e) {
+    r <- tryCatch(analyze_gene(g, cancer, cnt, merged, gdc_expr, data_txt), error = function(e) {
       failures <<- c(failures, paste0(cancer, " ", toupper(g), ": ", conditionMessage(e)))
       cat("  !!", toupper(g), "실패:", conditionMessage(e), "\n")
       NULL

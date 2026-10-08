@@ -344,6 +344,10 @@ analyze_endpoint <- function(d, ep, g, gse, gene, pop = "All") {
   n_ev <- sum(de[[event]])
   cat(sprintf("  [%s] n = %d (%s %d / %s %d), 사건 %d\n", tag, nrow(de),
               group_ref(), cnt[[group_ref()]], group_alt(), cnt[[group_alt()]], n_ev))
+  # 분석 정보용 (실제 적합한 모형식은 아래 add_model 등에서 out$models에 추가)
+  out$n_txt <- sprintf("%s/%s: n=%d (%s %d / %s %d); events=%d", ep, pop, nrow(de), group_ref(),
+                       cnt[[group_ref()]], group_alt(), cnt[[group_alt()]], n_ev)
+  out$models <- character()
   if (n_ev < cfg$min_events || any(cnt == 0)) {
     warning(gse, " ", tag, ": 사건 ", n_ev, " 또는 빈 그룹 → 건너뜀", call. = FALSE)
     return(out)
@@ -375,6 +379,9 @@ analyze_endpoint <- function(d, ep, g, gse, gene, pop = "All") {
 
   add_model <- function(name, m, key_term = gt, keep_table = FALSE) {
     fit <- fit_cox(m$d, m$terms, time = time, event = event)
+    out$models <<- c(out$models, sprintf("%s: %s (n=%d, events=%d)", name,
+                                         paste(deparse(formula(fit), width.cutoff = 500L), collapse = " "),
+                                         nrow(m$d), m$events))
     tab <- cox_rows(fit, m$d, m$terms, labs[m$terms], event = event)
     z   <- zph_rows(fit, gene, name)
     k   <- tab[tab$term == key_term & !tab$reference, ]
@@ -407,6 +414,8 @@ analyze_endpoint <- function(d, ep, g, gse, gene, pop = "All") {
   }))
   if (nrow(uni_cov)) {
     cox_tabs[["Univariable, clinical"]] <- data.frame(Model = "Univariable", format_cox(uni_cov), check.names = FALSE)
+    out$models <- c(out$models, sprintf("Univariable (clinical, complete case per term): Surv(%s, %s) ~ <term>; terms: %s",
+                                        time, event, paste(uni_terms, collapse = ", ")))
   }
 
   m <- build_multi(de, c(gt, cov_terms), event = event)
@@ -426,6 +435,8 @@ analyze_endpoint <- function(d, ep, g, gse, gene, pop = "All") {
     fi  <- fit_cox(mx$d, c(mx$terms, paste0(gt, ":", x)), time = time, event = event)
     p_int <- anova(fx, fi)[["Pr(>|Chi|)"]][2]
     rows[[length(rows)]]$p_interaction <- p_int
+    out$models <- c(out$models, paste0("Interaction LRT: anova(+ ", xl, " model, ",
+                                       paste(deparse(formula(fi), width.cutoff = 500L), collapse = " "), ")"))
     cat(sprintf("  [%s] + %s: n = %d, 사건 %d, EPV %.1f; %s × %s 상호작용 p = %s\n",
                 tag, xl, nrow(mx$d), mx$events, mx$epv, gt, x, fmt_p(p_int)))
   }
@@ -436,6 +447,7 @@ analyze_endpoint <- function(d, ep, g, gse, gene, pop = "All") {
     cut <- cfg$ph_split_months
     tsc <- time_split_cox(m$d, m$terms, cut, time = time, event = event)
     cat("  [", tag, "] ", tsc$msg, "\n", sep = "")
+    out$models <- c(out$models, sprintf("Time-split Cox (gene-term PH violation): Multivariable split at %d months", cut))
     for (w in 1:2) {
       sfx <- c("early", "late")[w]
       rows[[length(rows) + 1]] <- data.frame(
@@ -507,7 +519,8 @@ run_geo_validation <- function(gse, cfg_geo) {
   cat("\n[", gene, " probe] ", nrow(pq), "개, 선택 규칙 cfg$geo_probe_rule = ", cfg$geo_probe_rule, "\n", sep = "")
   print(transform(pq, mean = round(mean, 3), median = round(median, 3), IQR = round(IQR, 3), sd = round(sd, 3)),
         row.names = FALSE, digits = 3)
-  created <- c(created, save_table(pq, "GEO", "probe_QC.csv", subdir = gse, prefix = gse))
+  f_pq <- save_table(pq, "GEO", "probe_QC.csv", subdir = gse, prefix = gse)
+  created <- c(created, f_pq)
   probe <- pq$probe_id[pq$chosen]
 
   # ---- median split (종양 샘플 전체) ----
@@ -528,7 +541,8 @@ run_geo_validation <- function(gse, cfg_geo) {
   }
   cat("\n[phenotype QC] 종양", nrow(d), "명\n")
   print(pq_tab, right = FALSE, row.names = FALSE)
-  created <- c(created, save_table(pq_tab, "GEO", "pheno_QC.csv", subdir = gse, prefix = gse))
+  f_ph <- save_table(pq_tab, "GEO", "pheno_QC.csv", subdir = gse, prefix = gse)
+  created <- c(created, f_ph)
 
   # ---- 생존분석: 종점 × (전체, 하위군) ----
   pops <- list(All = d)
@@ -546,13 +560,34 @@ run_geo_validation <- function(gse, cfg_geo) {
 
   # ---- TCGA 방향 비교 ----
   tcga <- tcga_reference(g$validates, gene)
+
+  # ---- 분석 정보용 공통 값 (출력 CSV별 → <GSE>_analysis_info_06.csv) ----
+  ds_set <- function(k) {   # cfg$geo_datasets$<GSE>$<k> (이름 있으면 이름:값)
+    v <- unlist(g[[k]])
+    if (!is.null(names(v))) v <- paste0(names(v), ":", v)
+    paste0("geo_datasets$", gse, "$", k, "=", paste(v, collapse = ","))
+  }
+  geo_settings <- c("primary_gene", "group_levels", "cox_gene_term", "cox_covariates", "cox_uni_covariates",
+                    "epv_min", "stage_full", "stage_collapsed", "min_events", "ph_split_months", "rmst_tau",
+                    "km_times", ds_set("cox_covariates_drop"), ds_set("extra_covariate"), ds_set("subgroup"),
+                    paste0("exclude_stage=", paste(sprintf("%s:%s", names(g$endpoints), vapply(g$endpoints, function(e)
+                      paste(e$exclude_stage %||% "none", collapse = ","), "")), collapse = ",")))
+  tcga_f <- out_file(g$validates, "survival_summary_raw.csv")
+  geo_data <- c(sprintf("%s / %s (series matrix as deposited, GEOquery; %d tumors)", gse, annotation(eset), nrow(d)),
+                sprintf("probe %s (%s)", probe, cfg$geo_probe_rule),
+                if (is.null(tcga)) "TCGA direction reference: none"
+                else paste0("TCGA direction reference: ", tcga_f, " (multi_hr ", signif(tcga$multi_hr, 4), ")"))
+  n_all <- vapply(res, function(r) r$n_txt %||% NA_character_, "")
+  n_all <- paste(n_all[!is.na(n_all)], collapse = " | ")
+  all_models <- unlist(lapply(names(res), function(k) if (length(res[[k]]$models)) paste0("[", k, "] ", res[[k]]$models)))
   s <- bind_rows(lapply(res, `[[`, "summary"))
   if (!"p_interaction" %in% names(s)) s$p_interaction <- NA
   s$tcga_multi_hr <- if (is.null(tcga)) NA else tcga$multi_hr
   s$direction_match <- if (is.null(tcga)) NA else sign(log(s$hr)) == sign(log(tcga$multi_hr))
   s$gene          <- gene                              # 90_export.R가 이 유전자의 결과인지 확인
   s$cox_gene_term <- cfg$cox_gene_term %||% "group"
-  created <- c(created, save_table(s, "GEO", "survival_summary_raw.csv", subdir = gse, prefix = gse))
+  f_raw <- save_table(s, "GEO", "survival_summary_raw.csv", subdir = gse, prefix = gse)
+  created <- c(created, f_raw)
 
   ep_lab <- vapply(g$endpoints, `[[`, "", "label")
   tab <- data.frame(
@@ -608,19 +643,26 @@ run_geo_validation <- function(gse, cfg_geo) {
                                                        g$label, ". NR = not reached.")))
 
   # ---- Cox 표 (종점 × 집단) ----
+  cox_info <- list()
   for (k in names(res)) {
     r <- res[[k]]
     if (is.null(r$cox)) next
     ep  <- sub(" .*$", "", k); pop <- sub("^\\S+ ", "", k)
     stem <- paste0("cox_", ep, if (pop != "All") paste0("_", pop))
-    created <- c(created, save_df_table(
+    f <- save_df_table(
       r$cox, "GEO", stem, subdir = gse, prefix = gse,
       caption = paste0("Cox regression for ", tolower(ep_lab[[ep]]), ": ", gene, " expression, ", g$label,
-                       if (pop != "All") paste0(", ", pop, " only") else "")))
+                       if (pop != "All") paste0(", ", pop, " only") else ""))
+    created <- c(created, f)
+    cox_info[[length(cox_info) + 1]] <- list(
+      Output = f[grepl("\\.csv$", f)],
+      Analysis = paste0("Cox regression, ", ep_lab[[ep]], ", ", pop, " (all models, all covariate rows)"),
+      Model = r$models, Settings = geo_settings, n = r$n_txt, Data = geo_data, Packages = "survival")
   }
   zph <- bind_rows(lapply(res, `[[`, "zph"))
-  created <- c(created, save_table(transform(zph, p = signif(p, 4), chisq = round(chisq, 3)),
-                                   "GEO", "ph_tests.csv", subdir = gse, prefix = gse))
+  f_zph <- save_table(transform(zph, p = signif(p, 4), chisq = round(chisq, 3)),
+                      "GEO", "ph_tests.csv", subdir = gse, prefix = gse)
+  created <- c(created, f_zph)
   if (any(zph$flag)) {
     fl <- zph[zph$flag, ]
     cat("\ncox.zph p < 0.05:", paste(sprintf("%s/%s %s: %s", fl$endpoint, fl$population, fl$model, fl$term),
@@ -647,6 +689,40 @@ run_geo_validation <- function(gse, cfg_geo) {
                   sprintf("n = %d, events = %d, EPV = %.1f", nrow(fo$m$d), fo$m$events, fo$m$epv)),
       "GEO", paste0("forest_multi_", ep), width = 9, height = 1.6 + 0.35 * nrow(fo$tab), subdir = gse, prefix = gse))
   }
+
+  # ---- 분석 정보 ----
+  tab_path <- function(name) file.path(out_dir("GEO", "tables", gse), out_file(gse, name))
+  surv_model <- c("KM + log-rank: Surv(<EP>_months, <EP>_event) ~ group", all_models,
+                  paste0("RMST: survRM2::rmst2 (", group_contrast_label(), ")"), "cox.zph for every model",
+                  paste0("direction vs TCGA-", g$validates, " multivariable HR"))
+  info <- c(
+    list(
+      list(Output = f_pq, Analysis = paste0("Probe QC and selection for ", gene),
+           Model = c(paste0("all probes with ", g$symbol_col, " = ", gene, " (split on ///)"),
+                     paste0("chosen by geo_probe_rule over tumors; median split of probe ", probe, " within tumors")),
+           Settings = c("geo_probe_rule", ds_set("symbol_col"), ds_set("platform")),
+           n = sprintf("%d probes; %d tumors", nrow(pq), nrow(d)), Data = geo_data, Packages = c("GEOquery", "Biobase")),
+      list(Output = f_ph, Analysis = "Phenotype mapping QC (characteristics_ch1 → canonical fields)",
+           Model = "n, missing and values per mapped field; usable n/events per endpoint",
+           Settings = c("geo_na_values", ds_set("fields"), ds_set("exclude_sample_type"), ds_set("stage_na_values")),
+           n = sprintf("%d tumors", nrow(d)), Data = geo_data, Packages = c("GEOquery", "Biobase")),
+      list(Output = f_raw, Analysis = "External validation summary per endpoint × population × model",
+           Model = surv_model, Settings = geo_settings, n = n_all, Data = geo_data,
+           Packages = c("survival", "survRM2", "GEOquery", "Biobase")),
+      list(Output = tab_path("survival_summary.csv"),
+           Analysis = "Formatted external validation summary (from survival_summary_raw)",
+           Model = surv_model, Settings = geo_settings, n = n_all, Data = geo_data,
+           Packages = c("survival", "survRM2", "GEOquery", "Biobase")),
+      list(Output = tab_path("km_summary.csv"), Analysis = "Kaplan–Meier estimates by expression group",
+           Model = c("survfit(Surv(<EP>_months, <EP>_event) ~ group)", "survdiff (log-rank)"),
+           Settings = c("group_levels", "km_times", ds_set("subgroup")), n = n_all, Data = geo_data,
+           Packages = "survival")),
+    cox_info,
+    list(list(Output = f_zph, Analysis = "Proportional hazards test (Schoenfeld residuals)",
+              Model = paste0("cox.zph of: ", paste(all_models[!grepl("^\\[[^]]+\\] (Univariable \\(clinical|Interaction|Time-split)", all_models)],
+                                                   collapse = "; ")),
+              Settings = c("cox_gene_term", "cox_covariates"), n = n_all, Data = geo_data, Packages = "survival")))
+  created <- c(created, write_analysis_info(info, "GEO", "06", subdir = gse, prefix = gse))
 
   move_stale_outputs("GEO", c("km_", "forest", "cox_", "zph_"), created, subdir = gse, prefix = gse)
   list(files = created, summary = s, probe = pq[pq$chosen, ], tcga = tcga, g = g, d = d)

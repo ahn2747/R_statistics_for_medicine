@@ -39,7 +39,7 @@ add_skip <- function(what, reason) {
 sub_type <- function(sub) if (sub == "figure") "figures" else "tables"
 sub_ext  <- function(sub) if (sub == "figure") ex$fig_ext else ex$table_ext
 # TCGA 출력 패밀리 → 만드는 스크립트 (재실행 안내용)
-producer <- function(p) if (grepl("^(table1|correlation)_", p)) "03_table1.R" else "04_survival.R"
+producer <- function(p) if (grepl("^(table1_|correlation_|analysis_info_03)", p)) "03_table1.R" else "04_survival.R"
 
 # ---- 1. 유전자 존재 + 2. 03·04 출력 + 3. 신선도 ----
 missing <- character()

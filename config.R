@@ -210,11 +210,12 @@ cfg$export <- list(
   layout = list(
     tcga = list(
       firstline = c("table1_{G}", "cox_uni", "cox_multi_{G}", "survival_summary",
-                    "km_summary", "ph_tests", "correlation_{G}"),
+                    "km_summary", "ph_tests", "correlation_{G}", "analysis_info_03", "analysis_info_04"),
       figure    = c("km_{G}", "forest_multi_{G}")),
-    gsea = list(data   = c("gsea_{coll}", "gsea_summary", "gsea_QC"),
+    gsea = list(data   = c("gsea_{coll}", "gsea_summary", "gsea_QC", "analysis_info_05"),
                 figure = c("nes_{coll}", "volcano", "pca", "enrichment_*")),
-    geo  = list(data   = c("cox_*", "km_summary", "survival_summary", "ph_tests", "probe_QC", "pheno_QC"),
+    geo  = list(data   = c("cox_*", "km_summary", "survival_summary", "ph_tests", "probe_QC", "pheno_QC",
+                           "analysis_info_06"),
                 figure = c("km_*", "forest*"))
   ),
   gsea_fdr   = 0.05,                       # key_results: 유의 경로 기준 (padj <)
