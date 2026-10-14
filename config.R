@@ -193,6 +193,24 @@ cfg$cor_vars <- list(
   clinical = c(age = "Age", cea_level_pretreatment = "CEA")
 )
 
+# ---- signature score 트랙 (11_sig_scores.R → 12_sig_survival.R, 13_sig_geo.R) -------------
+# 기존 유전자 파이프라인과 분리 (merged.rds·04 BH·05·90·run_gene.R에 영향 없음). 암종별로 따로 계산
+# 정의: 외부 문헌/MSigDB (이 TCGA 데이터의 DEG에서 유도한 것이 아님). up/down이 모두 있으면 점수 = up − down
+#   source(출처)는 필수. 유전자 기호는 정확히 일치해야 함 (alias 자동 변환 없음)
+cfg$signatures <- list(
+  # 예: MYSIG = list(up = c("GENE1", "GENE2", "GENE3"), down = c("GENE4", "GENE5", "GENE6"),
+  #                  source = "Author et al. 2020 (PMID 00000000)", label = "MYSIG")
+)
+cfg$signature_primary_method   <- "ssgsea"   # 메인 점수 (결과 보기 전에 지정): "z", "pc1", "ssgsea", "singscore"
+cfg$signature_min_match        <- 0.8        # 사용(매칭 + 필터 통과) / 정의 하한 (방향별·전체). 미만이면 중단
+cfg$signature_min_genes        <- 3          # 방향별 최소 사용 유전자 수
+cfg$signature_expr_filter      <- list(      # 저발현 필터 (통과 행렬 = 네 점수와 무작위 배경에 공통)
+  tcga = list(min_log2 = 1, min_frac = 0.2), # log2(TPM+1) ≥ 1 (TPM ≥ 1)이 점수 샘플의 20% 이상
+  geo  = NULL                                # 분산 0 / 결측만 제외 (마이크로어레이)
+)
+cfg$signature_random_n         <- 1000       # PC1 설명력 비교용 무작위 gene set 반복 (seed = cfg$seed)
+cfg$signature_ssgsea_normalize <- FALSE      # GSVA ssgseaParam(normalize =); up/down은 한 번에 계산
+
 # ---- 실행 파일 (run_gene.R) ---------------------------------------------------
 cfg$rscript <- "C:/Program Files/R/R-4.6.1/bin/Rscript.exe"
 cfg$python  <- if (nzchar(Sys.which("python"))) unname(Sys.which("python")) else "py"   # PATH에 python 없으면 py 런처

@@ -41,3 +41,16 @@ Every setting below lives in `config.R` (the no-hardcoding / audit-grep rule is 
 **Unadjusted by design:** KM and log-rank, RMST, univariable Cox, Table 1 tests, and the `<strata_var>` × group crosstab. 06 uses the same `cox_covariates`, `covariate_scale`, `reference_levels`, `group_levels`, `epv_min`, `min_events`, `km_times`, `ph_split_months` and `rmst_tau` as 04, so TCGA and GEO models match.
 
 **Changing covariates:** edit only `config.R`, then rerun (see CLAUDE.md Conventions; the manifest guards patient counts). Confirm that the forest plots and `cox_multi_*` show the intended terms and reference rows. Changing `group_levels` also changes which group the HRs and log2FC are relative to.
+
+## Signature track (11–13)
+These settings are separate from the gene pipeline above (details in docs/methods.md "Signature scores").
+
+| Key | Default | Used in | Controls |
+|---|---|---|---|
+| `signatures` | empty list | 11 | `<SIG> = list(up, down, source, label)`; score = up − down. `source` is required; duplicates, up/down overlap or unknown keys stop 11 |
+| `signature_primary_method` | `"ssgsea"` | 12, 13 | Main score, fixed before looking at results (`z`, `pc1`, `ssgsea`, `singscore`) |
+| `signature_min_match` | `0.8` | 11 | Minimum used / defined genes, per direction and overall |
+| `signature_min_genes` | `3` | 11 | Minimum used genes per direction |
+| `signature_expr_filter` | `tcga = list(min_log2 = 1, min_frac = 0.2)`, `geo = NULL` | 11 (13) | Low-expression filter; the filtered matrix is the background for all scores and random sets. `NULL` = non-zero variance only |
+| `signature_random_n` | `1000` | 11 | Random gene sets for the PC1 variance percentile (seed = `seed`) |
+| `signature_ssgsea_normalize` | `FALSE` | 11 | GSVA `ssgseaParam(normalize =)` |

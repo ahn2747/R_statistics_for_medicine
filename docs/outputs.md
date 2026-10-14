@@ -58,6 +58,16 @@
 - `inspect/` (from `test_geo_inspect.R`) is left alone.
 - Stale prefixes: `km_`, `forest`, `cox_`, `zph_`.
 
+## 11 outputs (signature scores; separate track)
+- `data/processed/<C>_sigscores_<SIG>.csv` (no prefix rule, git-ignored): `sample_id, z, pc1, ssgsea, singscore`. The common interface for 12/13; no survival data (joined at analysis time).
+- `output/tables/<C>/signature/<SIG>/`:
+  - `sig_genes_<SIG>.csv`: gene, direction, status (`matched` / `not_in_matrix` / `low_expression`), mean_log2, frac_expressed, sd, r_drop, alpha_if_dropped (from the signed all-gene alpha), pc1_loading (within its set, sign aligned)
+  - `sig_qc_<SIG>.csv`: one row per set (up, down, plus `all` when both exist): n_defined, n_matched, n_used, match_ratio, alpha, pc1_var_explained, random_pc1_pct, random_pc1_p (`all` has alpha only), random_n, seed, n_samples, n_genes_background, filter_rule, n_clinical, n_clinical_no_expression
+  - `sig_score_cor_<SIG>.csv`: method1, method2, spearman_rho, n (all ordered pairs)
+  - `analysis_info_11.csv`
+- `output/figures/<C>/signature/<SIG>/`: `sig_score_pairs_<SIG>`, `sig_random_pc1_<SIG>`
+- Stale handling: 11 moves only its own families inside `signature/<SIG>/`; a full run (no SIG argument) moves folders of signatures no longer in `cfg$signatures` to `signature/_stale/`. The existing 03–06 stale functions list only their own folder level (non-recursive), so they never touch `signature/`. Keep it that way: never call `move_stale_dirs()`/`move_stale_outputs()` on a parent of `signature/` with a broad pattern.
+
 ## Export to the student folder (`90_export.R`, settings in `cfg$export`)
 `Rscript 90_export.R [GENE] [--dry-run]` copies one gene's finished outputs (GENE defaults to `cfg$primary_gene`) into `<dest_root>/<folder_fmt % NAME>/`, e.g. `0.학생연구자료/MAD2L1(COAD&READ)/`. Shared helpers are in `R/export.R`.
 - **Export name** (`NAME`, `export_name()`): GENE by default. With `cfg$export$use_custom_filename = TRUE`, `cfg$export$custom_filename` (e.g. `"MYSIG"`) replaces the gene in every destination name: the folder (`MYSIG(COAD&READ)/`), the generated files (`MYSIG_tables.docx`, `MYSIG_key_results.csv`) and copied files whose layout pattern has `{G}` (`COAD_table1_MAD2L1.csv` → `COAD_table1_MYSIG.csv`, `COAD_km_MAD2L1.tiff` → `COAD_km_MYSIG.tiff`).

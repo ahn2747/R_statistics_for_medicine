@@ -76,3 +76,16 @@ Methods text:
 - **Subgroup:** KM, univariable and multivariable models are repeated in pMMR.
 - **PH, time-split and RMST:** these follow the 04 rules. cox.zph runs for every model. The time-split Cox (0–24 / >24 months) runs on the multivariable model only when the gene term violates PH. RMST (High − Low, tau 60) is always reported. Time-0 patients are kept (the survSplit origin is shifted below 0).
 - **Direction check:** each GEO HR is compared with the sign of the TCGA multivariable HR from `output/tables/<validates>/<validates>_survival_summary_raw.csv`.
+
+## Signature scores (11; separate track)
+- **Definition:** `cfg$signatures$<SIG>` (up and/or down gene sets, required `source`) from external literature/MSigDB, not derived from this TCGA data. Exact symbol matching, no alias conversion. The track never touches `merged.rds`, `detect_genes()`, 04's BH set, 05, 90 or run_gene.R.
+- **Input:** 02a log2(TPM + 1) (`database/TCGA_<C>_RNAseq_Expression.csv`), each cancer separately. Score samples = `_clinical_all.rds` patients with expression (before the neoadjuvant exclusion; COAD 454, READ 165).
+- **Filter:** genes with log2(TPM + 1) ≥ 1 in ≥ 20% of score samples and non-zero variance (`signature_expr_filter$tcga`; COAD/READ ≈ 19,400 genes). The filtered matrix is the common background for all four scores and the random gene sets.
+- **Matching:** used (matched and passing the filter) / defined must be ≥ `signature_min_match` (0.8) per direction and overall, with ≥ `signature_min_genes` (3) per direction; otherwise 11 stops and lists the genes.
+- **Scores** (per set, then score = score(up) − score(down)):
+  - z: per-gene z over score samples, averaged
+  - PC1: `prcomp(scale. = TRUE)`, sign set so that PC1 correlates positively with the z-score
+  - ssGSEA: GSVA `ssgseaParam` (alpha 0.25, `normalize = FALSE`), up and down in one call
+  - singscore: `rankGenes` + `simpleScore(centerScore = TRUE)` per set (equal to `simpleScore(up, down)$TotalScore`)
+  - Main method fixed before results: `signature_primary_method` = ssGSEA.
+- **QC (no outcome used):** Cronbach's alpha (`psych::alpha`, down genes sign-flipped) with per-gene r.drop and alpha if dropped; PC1 variance explained per set vs `signature_random_n` (1000) random gene sets of the same size from the filtered background (seed `cfg$seed`), as a percentile and empirical p; Spearman correlations between the four scores.

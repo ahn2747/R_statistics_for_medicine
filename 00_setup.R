@@ -12,13 +12,15 @@ cran_pkgs <- c(
   "gtsummary", "flextable", "officer",                                 # 03 Table 1
   "survival", "survminer", "ggplot2", "ggpubr", "forestmodel",         # 04 생존분석
   "survRM2", "jsonlite", "ggrepel",                                    # 04 RMST, 01 manifest, 05 volcano
-  "msigdbr", "BiocManager"                                             # 05 GSEA
+  "msigdbr", "BiocManager",                                            # 05 GSEA
+  "psych"                                                              # 11 signature QC (Cronbach's alpha)
 )
 bioc_pkgs <- c(
   "TCGAbiolinks", "SummarizedExperiment",                              # 02a
   "DESeq2", "apeglm", "BiocParallel", "limma", "fgsea",               # 05
   "clusterProfiler", "enrichplot",                                     # 05
-  "GEOquery", "org.Hs.eg.db"                                           # 06
+  "GEOquery", "org.Hs.eg.db",                                          # 06
+  "GSVA", "singscore"                                                  # 11, 13 signature 점수
 )
 
 options(repos = c(CRAN = "https://cloud.r-project.org"))
