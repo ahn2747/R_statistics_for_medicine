@@ -354,3 +354,30 @@ geo_endpoint_data <- function(d, ep, g, gse, tag, keep) {
   }
   de
 }
+
+# ---- 전 유전자 probe 축약 (13: signature 점수) ------------------------------
+# 플랫폼의 모든 유전자 기호마다 cfg$geo_probe_rule로 probe 하나 선택 → 유전자 × 샘플 행렬
+# 선택 규칙은 probe_qc()와 같음: 기호가 포함된 probe("A /// B" 포함) 중 통계량 최대, 동점이면 GPL 순서상 첫 probe
+# ex: 종양 샘플 열만 (통계량을 종양 기준으로 계산)
+# 반환: list(mat (기호 × 샘플), probe_map = data.frame(symbol, probe_id, n_probes, multi_mapped))
+geo_gene_matrix <- function(ex, fd, g, gse) {
+  syms <- geo_symbols(fd, g, gse)
+  if (!identical(rownames(ex), rownames(fd))) stop(gse, ": 발현 행렬과 GPL 주석의 probe 순서 불일치")
+  col <- probe_rule_col()
+  stat <- switch(col, mean = rowMeans(ex, na.rm = TRUE),
+                 IQR = apply(ex, 1, IQR, na.rm = TRUE), sd = apply(ex, 1, sd, na.rm = TRUE))
+  long <- data.frame(idx = rep(seq_along(syms), lengths(syms)), symbol = unlist(syms), stringsAsFactors = FALSE)
+  long <- long[!is.na(long$symbol) & nzchar(long$symbol) & !is.na(stat[long$idx]), ]
+  long$stat <- stat[long$idx]
+  n_probes <- table(long$symbol)
+  long <- long[order(long$symbol, -long$stat, long$idx), ]
+  pick <- long[!duplicated(long$symbol), ]
+  mat <- ex[pick$idx, , drop = FALSE]
+  rownames(mat) <- pick$symbol
+  map <- data.frame(symbol = pick$symbol, probe_id = rownames(ex)[pick$idx],
+                    n_probes = as.integer(n_probes[pick$symbol]), multi_mapped = lengths(syms[pick$idx]) > 1,
+                    stringsAsFactors = FALSE)
+  cat(sprintf("probe → 유전자 (cfg$geo_probe_rule = %s): %d probes → %d 유전자 기호\n",
+              cfg$geo_probe_rule, nrow(ex), nrow(mat)))
+  list(mat = mat, probe_map = map)
+}

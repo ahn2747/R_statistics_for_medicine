@@ -73,7 +73,13 @@
   - `sig_survival_summary_<SIG>.{docx,csv}` (primary method first), `sig_cox_<SIG>.{docx,csv}` (every covariate row of every model, with Method/Model), `sig_km_summary_<SIG>.{docx,csv}`, `sig_ph_tests_<SIG>.csv`, `analysis_info_12.csv`
 - `output/figures/<C>/signature/<SIG>/`: `sig_km_<SIG>_<method>` (4), `sig_forest_<SIG>` (score HR per method × model), `sig_forest_multi_<SIG>` (all covariates, primary method)
 
-- Stale handling: 11 and 12 each move only their own families inside `signature/<SIG>/`; a full run (no SIG argument) moves folders of signatures no longer in `cfg$signatures` to `signature/_stale/`. The existing 03–06 stale functions list only their own folder level (non-recursive), so they never touch `signature/`. Keep it that way: never call `move_stale_dirs()`/`move_stale_outputs()` on a parent of `signature/` with a broad pattern.
+## 13 outputs (signature GEO validation)
+- `data/processed/<GSE>_sigscores_<SIG>.csv`: same interface as 11 (all tumors).
+- `output/tables/GEO/<GSE>/signature/<SIG>/` (prefix `<GSE>_`): `sig_genes_<SIG>` (11's columns + probe_id, n_probes, multi_mapped; status `not_on_platform` instead of `not_in_matrix`), `sig_qc_<SIG>`, `sig_score_cor_<SIG>`, `sig_survival_summary_raw_<SIG>` (12's columns per method × endpoint × population × model + p_interaction, tcga_multi_hr, direction_match), `sig_survival_summary_<SIG>.{docx,csv}`, `sig_cox_<SIG>_<EP>[_<subgroup>].{docx,csv}`, `sig_km_summary_<SIG>.{docx,csv}`, `sig_ph_tests_<SIG>.csv`, `analysis_info_13.csv`
+- `output/figures/GEO/<GSE>/signature/<SIG>/`: `sig_score_pairs_`, `sig_random_pc1_`, `sig_km_<SIG>_<method>_<EP>[_<subgroup>]`, `sig_forest_<SIG>` (primary method, all endpoints/populations/models), `sig_forest_multi_<SIG>_<EP>` (most adjusted model, primary method)
+- 06's stale call (`GEO/<GSE>/` top level only) does not touch `signature/`.
+
+- Stale handling: 11, 12 and 13 each move only their own families inside `signature/<SIG>/`; a full run (no SIG argument) moves folders of signatures no longer in `cfg$signatures` to `signature/_stale/`. The existing 03–06 stale functions list only their own folder level (non-recursive), so they never touch `signature/`. Keep it that way: never call `move_stale_dirs()`/`move_stale_outputs()` on a parent of `signature/` with a broad pattern.
 
 ## Export to the student folder (`90_export.R`, settings in `cfg$export`)
 `Rscript 90_export.R [GENE] [--dry-run]` copies one gene's finished outputs (GENE defaults to `cfg$primary_gene`) into `<dest_root>/<folder_fmt % NAME>/`, e.g. `0.학생연구자료/MAD2L1(COAD&READ)/`. Shared helpers are in `R/export.R`.
