@@ -7,8 +7,25 @@
 
 # ---- 경로 --------------------------------------------------------------
 
-# 대상 폴더: <dest_root>/<folder_fmt % GENE>
-export_dest <- function(gene) file.path(cfg$export$dest_root, sprintf(cfg$export$folder_fmt, gene))
+# 내보내기 이름: cfg$export$use_custom_filename = TRUE면 custom_filename, 아니면 유전자
+# (대상 폴더·생성 파일·복사 파일 이름의 유전자 자리에만 쓰임. 결과 선택·docx 내용은 실제 유전자)
+export_name <- function(gene) {
+  if (!isTRUE(cfg$export$use_custom_filename)) return(gene)
+  nm <- cfg$export$custom_filename
+  bad <- function(why) stop("cfg$export$custom_filename ", why, " (use_custom_filename = TRUE)", call. = FALSE)
+  if (length(nm) > 1) bad(paste0("은 값 하나여야 함 (현재 ", length(nm), "개)"))
+  if (length(nm) == 0 || is.na(nm) || !is.character(nm) || !nzchar(trimws(nm))) bad("이 비어 있음")
+  if (nm != trimws(nm)) bad(paste0("앞뒤에 공백이 있음: \"", nm, "\""))
+  if (grepl("[<>:\"/\\\\|?*%{}[:cntrl:]]", nm)) {
+    bad(paste0("에 파일명에 쓸 수 없는 문자가 있음 (< > : \" / \\ | ? * % { } 제어문자): \"", nm, "\""))
+  }
+  if (grepl("[. ]$", nm)) bad(paste0("이 마침표/공백으로 끝남: \"", nm, "\""))
+  if (grepl("^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$", toupper(nm))) bad(paste0("이 Windows 예약 이름: \"", nm, "\""))
+  nm
+}
+
+# 대상 폴더: <dest_root>/<folder_fmt % 내보내기 이름 (export_name())>
+export_dest <- function(name) file.path(cfg$export$dest_root, sprintf(cfg$export$folder_fmt, name))
 
 # output/<type>/<cancer>/<subdir> (out_dir()과 달리 폴더를 만들지 않음 → 존재 확인용)
 src_dir <- function(cancer, type, subdir = NULL) {
@@ -38,6 +55,80 @@ match_outputs <- function(dir, prefix, pats, ext) {
     if (!isTRUE(cfg$export$include_de)) hit <- hit[!grepl("_de_results\\.", hit)]
     file.path(dir, hit)
   }), pats)
+}
+
+# layout 패턴 → 매칭 패턴(pat, {G} = 유전자) + 대상 패턴(dest_pat, {G} = 내보내기 이름)
+# 이름 치환은 패턴의 {G} 자리에서만 (예: enrichment_* 의 경로 이름 속 유전자 기호는 바뀌지 않음)
+layout_targets <- function(pats, gene, name) {
+  raw <- expand_patterns(pats, "{G}")   # {coll}만 확장, {G}는 그대로
+  data.frame(raw = raw, gene = gene, name = name,
+             pat = gsub("{G}", gene, raw, fixed = TRUE),
+             dest_pat = gsub("{G}", name, raw, fixed = TRUE),
+             has_g = grepl("{G}", raw, fixed = TRUE), stringsAsFactors = FALSE)
+}
+
+rx_escape <- function(x) gsub("([][{}()+*^$|\\\\.?])", "\\\\\\1", x)
+
+# 와일드카드(* ?)와 {G}가 함께 있는 패턴: 파일 이름에서 {G} 자리를 찾아 내보내기 이름으로 바꿈
+# {G} 위치가 둘 이상으로 해석되면 (최단/최장 일치 결과가 다르면) 중단
+glob_dest_name <- function(file, template, gene, name) {
+  tok <- regmatches(template, gregexpr("\\{G\\}|[*?]|[^*?{]+|\\{", template))[[1]]
+  slot <- tok %in% c("{G}", "*", "?")
+  rebuild <- function(lazy) {
+    q <- if (lazy) "?" else ""
+    rx <- paste0("^", paste(vapply(tok, function(k) switch(k, "{G}" = paste0("(", rx_escape(gene), ")"),
+                                                           "*" = paste0("(.*", q, ")"), "?" = "(.)", rx_escape(k)), ""),
+                            collapse = ""), "$")
+    m <- regmatches(file, regexec(rx, file, perl = TRUE))[[1]]   # TRE는 최단 일치(.*?)를 무시 → perl
+    if (!length(m)) stop(file, ": layout 패턴 ", template, "과 일치하지 않음")
+    out <- tok
+    out[slot] <- m[-1]
+    out[tok == "{G}"] <- name
+    paste(out, collapse = "")
+  }
+  a <- rebuild(TRUE); b <- rebuild(FALSE)
+  if (a != b) {
+    stop(file, ": layout 패턴 ", template, "에서 {G} 위치를 하나로 정할 수 없음 (", a, " / ", b,
+         ") → cfg$export$layout 패턴 수정 또는 cfg$export$use_custom_filename = FALSE")
+  }
+  a
+}
+
+# layout_targets() 결과로 파일 찾기 (매칭은 match_outputs()와 동일) + 대상 파일 이름
+# 반환: data.frame(source, dest_base, pattern) — 패턴 순서, 패턴 안에서는 match_outputs 순서
+match_targets <- function(dir, prefix, tg, ext) {
+  hits <- match_outputs(dir, prefix, tg$pat, ext)
+  rows <- lapply(seq_len(nrow(tg)), function(i) {
+    f <- hits[[i]]
+    if (!length(f)) return(NULL)
+    b <- basename(f)
+    dest <- if (!tg$has_g[i] || tg$pat[i] == tg$dest_pat[i]) {
+      b
+    } else if (!grepl("[*?]", tg$raw[i])) {
+      want <- paste0(prefix, "_", tg$pat[i], ".", ext)
+      if (!identical(b, want)) stop(dir, ": 패턴 ", tg$raw[i], "에 예상 밖 파일 ", paste(b, collapse = ", "))
+      paste0(prefix, "_", tg$dest_pat[i], ".", ext)
+    } else {
+      tpl <- paste0(prefix, "_", tg$raw[i], ".", ext)
+      vapply(b, glob_dest_name, "", template = tpl, gene = tg$gene[i], name = tg$name[i])
+    }
+    data.frame(source = f, dest_base = unname(dest), pattern = tg$pat[i], stringsAsFactors = FALSE)
+  })
+  out <- do.call(rbind, rows)
+  if (is.null(out)) data.frame(source = character(), dest_base = character(), pattern = character()) else out
+}
+
+# 대상 경로 중복 (대소문자 무시: Windows 파일 시스템) → 원본 파일을 나열하고 중단
+check_plan_collisions <- function(plan) {
+  key <- tolower(plan$rel)
+  dup <- unique(key[duplicated(key)])
+  if (length(dup)) {
+    msg <- vapply(dup, function(k) paste0(plan$rel[key == k][1], " ← ", paste(plan$source[key == k], collapse = ", ")), "")
+    stop("대상 경로 중복 (서로 다른 원본이 같은 이름으로 내보내짐):\n  ", paste(msg, collapse = "\n  "),
+         if (isTRUE(cfg$export$use_custom_filename)) "\n  → cfg$export$custom_filename 또는 cfg$export$layout 확인" else "",
+         call. = FALSE)
+  }
+  invisible(plan)
 }
 
 # ---- 복사 계획 / 실행 ---------------------------------------------------

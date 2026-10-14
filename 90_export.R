@@ -1,16 +1,18 @@
 # =============================================================
 # 90_export.R [GENE] [--dry-run]
 # 이미 실행된 03–06 결과를 학생연구자료 폴더로 내보내기
-#   <cfg$export$dest_root>/<GENE>(COAD&READ)/
+#   <cfg$export$dest_root>/<NAME>(COAD&READ)/
 #     firstline/, figure/            03·04 CSV, TIFF (cfg$export$layout$tcga)
 #     gsea/data/, gsea/figure/       05 (gsea/<GENE>/)
 #     geo/<GSE>_<validates>/data|figure/   06 (이 유전자의 결과일 때만)
-#     <GENE>_tables.docx             양식(cfg$export$template)을 채운 표 + KM 그림
-#     <GENE>_key_results.csv         핵심 수치 요약
-#     _export_manifest.csv           복사 기록 (md5, git 커밋)
+#     <NAME>_tables.docx             양식(cfg$export$template)을 채운 표 + KM 그림
+#     <NAME>_key_results.csv         핵심 수치 요약
+#     _export_manifest.csv           복사 기록 (md5, git 커밋, 원본 → 대상 이름)
 #     _old/<YYYYMMDD_HHMM>/          내용이 바뀐 기존 파일 백업 (삭제하지 않음)
 # GENE 생략 = cfg$primary_gene. --dry-run = 계획만 출력 (파일 변경 없음)
-# 같은 이름 파일: md5가 같으면 건너뜀, 다르면 기존 파일을 _old/로 옮기고 복사
+# NAME = GENE, 또는 cfg$export$use_custom_filename = TRUE면 cfg$export$custom_filename
+#   (복사 파일은 layout 패턴의 {G} 자리만 NAME으로 바뀜. 결과 선택·docx 내용은 실제 GENE 기준)
+# 같은 대상 이름 파일: md5가 같으면 건너뜀, 다르면 기존 파일을 _old/로 옮기고 복사
 # =============================================================
 
 source("config.R")
@@ -22,14 +24,16 @@ dry  <- "--dry-run" %in% args
 pos  <- args[!startsWith(args, "--")]
 gene <- toupper(if (length(pos)) pos[1] else cfg$primary_gene)
 ex   <- cfg$export
-dest <- export_dest(gene)
+ename <- export_name(gene)
+dest <- export_dest(ename)
 ts   <- format(Sys.time(), "%Y%m%d_%H%M")
-cat("유전자", gene, "→", dest, if (dry) "(dry-run)" else "", "\n")
+cat("유전자", if (ename != gene) paste0(gene, " (내보내기 이름 ", ename, ")") else gene, "→", dest,
+    if (dry) "(dry-run)" else "", "\n")
 
 plan    <- data.frame(source = character(), rel = character(), stringsAsFactors = FALSE)
 skipped <- data.frame(what = character(), reason = character(), stringsAsFactors = FALSE)
-add_plan <- function(files, rel_dir) {
-  if (length(files)) plan <<- rbind(plan, data.frame(source = files, rel = file.path(rel_dir, basename(files)),
+add_plan <- function(files, rel_dir, dest_base = basename(files)) {
+  if (length(files)) plan <<- rbind(plan, data.frame(source = files, rel = file.path(rel_dir, dest_base),
                                                      stringsAsFactors = FALSE))
 }
 add_skip <- function(what, reason) {
@@ -52,18 +56,18 @@ for (cancer in cfg$cancers) {
   }
   m_time <- file.mtime(merged)
   for (sub in names(ex$layout$tcga)) {
-    pats <- expand_patterns(ex$layout$tcga[[sub]], gene)
-    hits <- match_outputs(src_dir(cancer, sub_type(sub)), cancer, pats, sub_ext(sub))
-    for (p in pats[lengths(hits) == 0]) {
+    tg <- layout_targets(ex$layout$tcga[[sub]], gene, ename)
+    mt <- match_targets(src_dir(cancer, sub_type(sub)), cancer, tg, sub_ext(sub))
+    for (p in tg$pat[!tg$pat %in% mt$pattern]) {
       missing <- c(missing, sprintf("%s_%s.%s → %s 재실행 필요", cancer, p, sub_ext(sub), producer(p)))
     }
-    f <- unlist(hits, use.names = FALSE)
+    f <- mt$source
     old <- f[file.mtime(f) < m_time]
     if (length(old)) {
       warning(cancer, ": ", length(old), "개 출력이 ", basename(merged), "보다 오래됨 (재실행하지 않은 결과일 수 있음): ",
               paste(basename(old), collapse = ", "), call. = FALSE)
     }
-    add_plan(f, sub)
+    add_plan(f, sub, mt$dest_base)
   }
 }
 if (length(missing)) stop("03·04 출력 없음:\n  ", paste(unique(missing), collapse = "\n  "))
@@ -80,12 +84,12 @@ for (cancer in cfg$cancers) {
     next
   }
   for (sub in names(ex$layout$gsea)) {
-    pats <- expand_patterns(ex$layout$gsea[[sub]], gene)
-    hits <- match_outputs(src_dir(cancer, sub_type(sub), gsub_dir), cancer, pats, sub_ext(sub))
-    if (any(lengths(hits) == 0)) {
-      warning(cancer, " GSEA: 없는 파일 패턴 ", paste(pats[lengths(hits) == 0], collapse = ", "), call. = FALSE)
+    tg <- layout_targets(ex$layout$gsea[[sub]], gene, ename)
+    mt <- match_targets(src_dir(cancer, sub_type(sub), gsub_dir), cancer, tg, sub_ext(sub))
+    if (!all(tg$pat %in% mt$pattern)) {
+      warning(cancer, " GSEA: 없는 파일 패턴 ", paste(tg$pat[!tg$pat %in% mt$pattern], collapse = ", "), call. = FALSE)
     }
-    add_plan(unlist(hits, use.names = FALSE), file.path("gsea", sub))
+    add_plan(mt$source, file.path("gsea", sub), mt$dest_base)
   }
 }
 
@@ -109,9 +113,9 @@ for (gse in names(cfg$geo_datasets)) {
   geo_ok <- c(geo_ok, gse)
   rel <- file.path("geo", paste0(gse, "_", cfg$geo_datasets[[gse]]$validates))
   for (sub in names(ex$layout$geo)) {
-    pats <- expand_patterns(ex$layout$geo[[sub]], gene)
-    hits <- match_outputs(src_dir("GEO", sub_type(sub), gse), gse, pats, sub_ext(sub))
-    add_plan(unlist(hits, use.names = FALSE), file.path(rel, sub))
+    tg <- layout_targets(ex$layout$geo[[sub]], gene, ename)
+    mt <- match_targets(src_dir("GEO", sub_type(sub), gse), gse, tg, sub_ext(sub))
+    add_plan(mt$source, file.path(rel, sub), mt$dest_base)
   }
 }
 
@@ -121,11 +125,11 @@ dir.create(tmp, showWarnings = FALSE)
 key <- do.call(rbind, c(lapply(cfg$cancers, key_rows_tcga, gene = gene),
                         lapply(geo_ok, key_rows_geo),
                         lapply(cfg$cancers, key_rows_gsea, gene = gene)))
-key_f <- file.path(tmp, paste0(gene, "_key_results.csv"))
+key_f <- file.path(tmp, paste0(ename, "_key_results.csv"))
 readr::write_excel_csv(key, key_f, na = "")
 generated <- key_f
 if (!is.null(ex$template) && file.exists(ex$template)) {
-  docx_f <- file.path(tmp, paste0(gene, "_tables.docx"))
+  docx_f <- file.path(tmp, paste0(ename, "_tables.docx"))
   build_tables_docx(gene, docx_f)
   generated <- c(generated, docx_f)
 } else {
@@ -133,7 +137,7 @@ if (!is.null(ex$template) && file.exists(ex$template)) {
 }
 add_plan(generated, ".")
 plan$rel <- sub("^\\./", "", plan$rel)
-if (anyDuplicated(plan$rel)) stop("대상 경로 중복: ", paste(unique(plan$rel[duplicated(plan$rel)]), collapse = ", "))
+check_plan_collisions(plan)
 
 # ---- 계획 ----
 plan <- plan_copy(plan, dest)
@@ -166,7 +170,7 @@ if (changed || !file.exists(man_f)) {
     dest = plan$rel, status = plan$status, md5 = plan$md5,
     size = file.size(plan$source), source_mtime = format(file.mtime(plan$source), "%Y-%m-%d %H:%M:%S"),
     exported_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
-    git_head = gi$head, git_dirty = gi$dirty, gene = gene, cox_gene_term = ct %||% NA)
+    git_head = gi$head, git_dirty = gi$dirty, gene = gene, export_name = ename, cox_gene_term = ct %||% NA)
   if (file.exists(man_f)) {
     dir.create(old_dir, recursive = TRUE, showWarnings = FALSE)
     bak <- file.path(old_dir, basename(man_f))

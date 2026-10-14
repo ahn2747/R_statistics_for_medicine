@@ -200,7 +200,11 @@ cfg$python  <- if (nzchar(Sys.which("python"))) unname(Sys.which("python")) else
 # ---- 학생연구자료 내보내기 (90_export.R) --------------------------------------
 cfg$export <- list(
   dest_root  = Sys.getenv("MEDIN_EXPORT_ROOT", "C:/Users/안지훈/Documents/0.학생연구자료"),
-  folder_fmt = paste0("%s(", paste(cfg$cancers, collapse = "&"), ")"),   # %s = 유전자 → "MAD2L1(COAD&READ)"
+  folder_fmt = paste0("%s(", paste(cfg$cancers, collapse = "&"), ")"),   # %s = 내보내기 이름 (기본 유전자) → "MAD2L1(COAD&READ)"
+  # 내보내기 이름: TRUE면 대상 폴더, <이름>_tables.docx/_key_results.csv, 복사 파일 이름의 {G} 자리를 custom_filename으로
+  #   (output/ 원본, 결과 선택, docx 내용 속 유전자 이름은 그대로). FALSE = 유전자 이름
+  use_custom_filename = FALSE,
+  custom_filename     = NA,                # 예: "MYSIG" → "MYSIG(COAD&READ)/", "COAD_table1_MYSIG.csv"
   template   = "C:/Users/안지훈/Documents/0.학생연구자료/table양식.docx",   # 읽기 전용
   fig_ext    = "tiff",
   table_ext  = "csv",
