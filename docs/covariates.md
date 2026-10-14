@@ -48,7 +48,7 @@ These settings are separate from the gene pipeline above (details in docs/method
 | Key | Default | Used in | Controls |
 |---|---|---|---|
 | `signatures` | empty list | 11 | `<SIG> = list(up, down, source, label)`; score = up − down. `source` is required; duplicates, up/down overlap or unknown keys stop 11 |
-| `signature_primary_method` | `"ssgsea"` | 12, 13 | Main score, fixed before looking at results (`z`, `pc1`, `ssgsea`, `singscore`) |
+| `signature_primary_method` | `"ssgsea"` | 12, 13 (summary order, `primary` flag, BH across signatures) | Main score, fixed before looking at results (`z`, `pc1`, `ssgsea`, `singscore`) |
 | `signature_min_match` | `0.8` | 11 | Minimum used / defined genes, per direction and overall |
 | `signature_min_genes` | `3` | 11 | Minimum used genes per direction |
 | `signature_expr_filter` | `tcga = list(min_log2 = 1, min_frac = 0.2)`, `geo = NULL` | 11 (13) | Low-expression filter; the filtered matrix is the background for all scores and random sets. `NULL` = non-zero variance only |

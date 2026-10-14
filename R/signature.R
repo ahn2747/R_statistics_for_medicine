@@ -298,3 +298,96 @@ sig_random_plot <- function(null, summary, title) {
     ggplot2::labs(x = "PC1 variance explained (random gene sets of the same size)", y = "Count", title = title) +
     ggplot2::theme_classic(base_size = 10)
 }
+
+# ---- 생존분석 (12, 13): R/survival.R 함수 호출만 ---------------------------------
+# d: 생존 코호트 (time/event 있음) + score_sd (코호트 내 표준화 점수) + group (median split, cfg$group_levels)
+#    + 공변량 열 (add_scaled_terms 적용)
+# 모형: KM/log-rank/RMST (group), 단변량 Cox (group, per 1 SD), 다변량 Cox (per 1 SD + cov_terms, build_multi EPV 규칙),
+#       strata_var가 있으면 다변량 + strata(), cox.zph, score 항 PH 위반 시 시간 분할 Cox
+# 연속형 항은 cfg$cox_gene_term과 무관하게 항상 score_sd (1 SD당 HR)
+# 반환: list(rows (모형별 score 항), cox (모든 공변량 행), zph, km (km_stats), fit_km, p_lr, rmst, multi, labels, models, skipped)
+sig_survival_set <- function(d, label, cov_terms, time = "os_months", event = "status", strata_var = NULL, where = "") {
+  out <- list(rows = NULL, cox = NULL, zph = NULL, km = NULL, models = character(), skipped = NULL)
+  cnt <- table(factor(d$group, levels = cfg$group_levels))
+  n_ev <- sum(d[[event]])
+  if (n_ev < cfg$min_events || any(cnt == 0)) {
+    out$skipped <- if (any(cnt == 0)) "empty expression group" else paste0("events ", n_ev, " < min_events ", cfg$min_events)
+    warning(where, ": ", out$skipped, " → 생존분석 건너뜀", call. = FALSE)
+    return(out)
+  }
+  labs <- c(term_labels(unique(c(cov_terms, cfg$stage_collapsed))),
+            score_sd = paste0(label, " score (per 1 SD)"),
+            group    = paste0(label, " score (", group_contrast_label(), ")"))
+
+  # ---- KM + log-rank + RMST (High vs Low) ----
+  f_km <- as.formula(paste0("Surv(", time, ", ", event, ") ~ group"))
+  out$fit_km <- surv_fit(f_km, data = d)
+  out$p_lr   <- survdiff(f_km, data = d)$pvalue
+  out$km     <- km_stats(out$fit_km, cfg$km_times)
+  out$rmst   <- rmst_diff(d, time = time, event = event)
+  if (nzchar(out$rmst$note)) warning(where, ": ", out$rmst$note, call. = FALSE)
+
+  # ---- Cox ----
+  rows <- list(); cox <- list(); zph <- list()
+  fits <- list()
+  add_model <- function(name, m, key, strata = NULL) {
+    fit <- fit_cox(m$d, m$terms, strata = strata, time = time, event = event)
+    fits[[name]] <<- fit
+    out$models <<- c(out$models, sprintf("%s: %s (n=%d, events=%d)", name,
+                                         paste(deparse(formula(fit), width.cutoff = 500L), collapse = " "), nrow(m$d), m$events))
+    tab <- cox_rows(fit, m$d, m$terms, labs[m$terms], event = event)
+    z <- if (is.null(strata)) zph_rows(fit, label, name) else NULL
+    k <- tab[tab$term == key & !tab$reference, ]
+    rows[[name]] <<- data.frame(
+      model = name, term = key, n = nrow(m$d), events = m$events, dropped = m$dropped, params = m$k, epv = m$epv,
+      stage_levels = m$stage_levels %||% NA, exploratory = m$exploratory %||% FALSE,
+      hr = k$hr, lo = k$lo, hi = k$hi, p = k$p,
+      ph_p_term = if (is.null(z)) NA else z$p[z$term == key], ph_p_global = if (is.null(z)) NA else z$p[z$term == "GLOBAL"],
+      stringsAsFactors = FALSE)
+    cox[[name]] <<- data.frame(Model = name, format_cox(tab), check.names = FALSE)
+    if (!is.null(z)) zph[[name]] <<- z
+    list(fit = fit, tab = tab)
+  }
+  simple <- function(terms) {
+    dm <- complete_cases(d, terms)
+    list(terms = terms, d = dm, events = sum(dm[[event]]), k = n_params(dm, terms),
+         epv = sum(dm[[event]]) / n_params(dm, terms), dropped = nrow(d) - nrow(dm), stage_levels = NA, exploratory = FALSE)
+  }
+  add_model("Univariable (High vs Low)", simple("group"), "group")
+  add_model("Univariable (per 1 SD)", simple("score_sd"), "score_sd")
+  m <- build_multi(d, c("score_sd", cov_terms), event = event)
+  mm <- add_model("Multivariable (per 1 SD)", m, "score_sd")
+  out$multi <- list(m = m, tab = mm$tab)
+  if (!is.null(strata_var)) {
+    ds <- m$d
+    ds$strata_grp <- collapse_small(ds[[strata_var]], strata_var)
+    add_model(paste0("Multivariable + strata(", strata_var, ") (per 1 SD)"),
+              modifyList(m, list(d = ds)), "score_sd", strata = "strata_grp")
+    rows[[length(rows)]]$n_strata <- length(unique(ds$strata_grp))
+  }
+
+  # ---- 시간 분할 Cox: score 항이 PH 위반(p < 0.05)일 때만, 다변량 모형 기준 (04/06과 같은 규칙) ----
+  zz <- do.call(rbind, zph)
+  if (any(zz$flag & zz$term == "score_sd")) {
+    cut <- cfg$ph_split_months
+    tsc <- time_split_cox(m$d, m$terms, cut, time = time, event = event, term = "score_sd")
+    cat("    ", tsc$msg, "\n", sep = "")
+    out$models <- c(out$models, sprintf("Time-split Cox (score-term PH violation): Multivariable split at %d months", cut))
+    for (w in 1:2) {
+      sfx <- c("early", "late")[w]
+      rows[[length(rows) + 1]] <- data.frame(
+        model = if (w == 1) sprintf("Multivariable, 0–%d months (per 1 SD)", cut) else sprintf("Multivariable, >%d months (per 1 SD)", cut),
+        term = "score_sd", n = if (w == 1) nrow(m$d) else sum(m$d[[time]] > cut), events = sum(tsc$events[w, ]),
+        dropped = m$dropped, params = m$k, epv = m$epv, stage_levels = m$stage_levels, exploratory = m$exploratory,
+        hr = tsc$est[[paste0("hr_", sfx)]], lo = tsc$est[[paste0("lo_", sfx)]], hi = tsc$est[[paste0("hi_", sfx)]],
+        p = tsc$est[[paste0("p_", sfx)]], ph_p_term = NA, ph_p_global = NA, stringsAsFactors = FALSE)
+    }
+  }
+  out$rows <- dplyr::bind_rows(rows)
+  out$cox  <- dplyr::bind_rows(cox)
+  out$zph  <- zz
+  out$labels <- labs
+  out$n_low  <- cnt[[group_ref()]]
+  out$n_high <- cnt[[group_alt()]]
+  out
+}

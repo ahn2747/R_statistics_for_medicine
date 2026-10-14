@@ -66,7 +66,14 @@
   - `sig_score_cor_<SIG>.csv`: method1, method2, spearman_rho, n (all ordered pairs)
   - `analysis_info_11.csv`
 - `output/figures/<C>/signature/<SIG>/`: `sig_score_pairs_<SIG>`, `sig_random_pc1_<SIG>`
-- Stale handling: 11 moves only its own families inside `signature/<SIG>/`; a full run (no SIG argument) moves folders of signatures no longer in `cfg$signatures` to `signature/_stale/`. The existing 03–06 stale functions list only their own folder level (non-recursive), so they never touch `signature/`. Keep it that way: never call `move_stale_dirs()`/`move_stale_outputs()` on a parent of `signature/` with a broad pattern.
+
+## 12 outputs (signature survival, same folders as 11)
+- `output/tables/<C>/signature/<SIG>/`:
+  - `sig_survival_summary_raw_<SIG>.csv`: one row per method × model: cohort, sig, method, primary, endpoint, population, model, term (`group` / `score_sd`), n, events, dropped, params, epv, stage_levels, exploratory, hr, lo, hi, p, ph_p_term, ph_p_global, n_strata (strata model), logrank_p, rmst_tau, rmst_low, rmst_high, rmst_diff, rmst_lo, rmst_hi, rmst_p, n_low, n_high, score_sd_raw (1 SD in score units), note, q_across_signatures, logrank_q_across_signatures. A skipped method (too few events) has a `note` only.
+  - `sig_survival_summary_<SIG>.{docx,csv}` (primary method first), `sig_cox_<SIG>.{docx,csv}` (every covariate row of every model, with Method/Model), `sig_km_summary_<SIG>.{docx,csv}`, `sig_ph_tests_<SIG>.csv`, `analysis_info_12.csv`
+- `output/figures/<C>/signature/<SIG>/`: `sig_km_<SIG>_<method>` (4), `sig_forest_<SIG>` (score HR per method × model), `sig_forest_multi_<SIG>` (all covariates, primary method)
+
+- Stale handling: 11 and 12 each move only their own families inside `signature/<SIG>/`; a full run (no SIG argument) moves folders of signatures no longer in `cfg$signatures` to `signature/_stale/`. The existing 03–06 stale functions list only their own folder level (non-recursive), so they never touch `signature/`. Keep it that way: never call `move_stale_dirs()`/`move_stale_outputs()` on a parent of `signature/` with a broad pattern.
 
 ## Export to the student folder (`90_export.R`, settings in `cfg$export`)
 `Rscript 90_export.R [GENE] [--dry-run]` copies one gene's finished outputs (GENE defaults to `cfg$primary_gene`) into `<dest_root>/<folder_fmt % NAME>/`, e.g. `0.학생연구자료/MAD2L1(COAD&READ)/`. Shared helpers are in `R/export.R`.

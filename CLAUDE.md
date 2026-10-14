@@ -20,6 +20,7 @@ R 4.6.1 is not on PATH. Use `"C:/Program Files/R/R-4.6.1/bin/Rscript.exe" <scrip
 05_gsea.R [COAD]        # DESeq2 High vs Low (~ tss + group) + fgsea on MSigDB Hallmark only (cfg$gsea_collections); needs 02a outputs; run one cancer per process
 06_external_geo.R [GSE] # GEO validation of cfg$primary_gene (cfg$geo_datasets; needs GEOquery, i.e. 00_setup.R without --core; reads 04's <C>_survival_summary_raw.csv)
 11_sig_scores.R [SIG ...] [C ...]   # signature track (separate from genes): z/PC1/ssGSEA/singscore per cancer → data/processed/<C>_sigscores_<SIG>.csv + QC under signature/<SIG>/ (cfg$signatures)
+12_sig_survival.R [SIG ...] [C ...] # OS per score method (KM/RMST on median split, Cox per 1 SD, EPV, strata(tss), PH); primary = cfg$signature_primary_method; reads 11's score files + _clinical(_all).rds
 90_export.R [GENE] [--dry-run]   # copy one gene's 03–06 outputs to cfg$export$dest_root + <G>_tables.docx, <G>_key_results.csv, _export_manifest.csv
 run_gene.R <GENE> [--skip-download] [--from=<step>]   # csv_download.py → 02b → 03 → 04 → 05 ×cancers → 06 → 90, with MEDIN_GENE=<GENE>
 ```

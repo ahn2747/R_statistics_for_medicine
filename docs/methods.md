@@ -89,3 +89,10 @@ Methods text:
   - singscore: `rankGenes` + `simpleScore(centerScore = TRUE)` per set (equal to `simpleScore(up, down)$TotalScore`)
   - Main method fixed before results: `signature_primary_method` = ssGSEA.
 - **QC (no outcome used):** Cronbach's alpha (`psych::alpha`, down genes sign-flipped) with per-gene r.drop and alpha if dropped; PC1 variance explained per set vs `signature_random_n` (1000) random gene sets of the same size from the filtered background (seed `cfg$seed`), as a percentile and empirical p; Spearman correlations between the four scores.
+
+## Signature survival (12; TCGA OS)
+- **Cohort:** scores joined with `_clinical.rds` (the analytic file with `cfg$exclude_neoadjuvant` applied; 12 stops if it doesn't match the current setting), patients with OS time/status. COAD 438 (97 events; TCGA-A6-2670 has no RNA-seq), READ 157 (25), with the current `exclude_neoadjuvant = FALSE`.
+- **High/Low:** `median_split()` of each score over **all scored patients** (before exclusion), like the .sav groups and 06.
+- **Continuous term:** `score_sd` = score standardized within the survival cohort; HR per 1 SD, regardless of `cox_gene_term`.
+- **Models per method** (all four reported; the primary method `signature_primary_method` is listed first): KM + log-rank, RMST (High − Low, tau 60), univariable Cox (High vs Low; per 1 SD), multivariable Cox (per 1 SD + `cox_covariates`, `build_multi()` EPV rule, complete case), multivariable + `strata(tss)` (sites < 10 collapsed), cox.zph on every unstratified model, time-split Cox (0–24 / >24 months) only when the score term violates PH. All computed with R/survival.R functions, unchanged.
+- **Multiplicity:** never pooled with the gene-level BH in 04. With several signatures and a full run (no SIG argument), `q_across_signatures` = BH across signatures for the primary method, per model (and for the log-rank p); otherwise NA.
