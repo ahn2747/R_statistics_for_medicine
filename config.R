@@ -5,8 +5,26 @@
 # 공변량/층화/보정/제외 설정 요약은 CLAUDE.md의 "Covariates" 표 참고
 # =============================================================
 
+# ---- 암종 세트 (환경변수 MEDIN_CANCER_SET으로 선택, 기본 colorectal) ----------
+# 세트마다 암종과 Cox 공변량이 다름. 세트끼리 섞지 않음 (BH·export 폴더·양식이 세트 단위)
+#   예 (bash): MEDIN_CANCER_SET=lung Rscript 01_import_clinical.R
+.cancer_sets <- list(
+  colorectal = list(cancers            = c("COAD", "READ"),
+                    cox_covariates     = c("age_g", "gender", "pathologic_stage_12_34", "cea_g"),
+                    cox_uni_covariates = c("age_g", "gender", "pathologic_stage_12_34", "cea_g")),
+  lung       = list(cancers            = c("LUAD", "LUSC"),            # CEA 없음 → cea_g 제외
+                    cox_covariates     = c("age_g", "gender", "pathologic_stage_12_34"),
+                    cox_uni_covariates = c("age_g", "gender", "pathologic_stage_12_34"))
+)
+.cancer_set <- Sys.getenv("MEDIN_CANCER_SET", "colorectal")
+if (!.cancer_set %in% names(.cancer_sets)) {
+  stop("알 수 없는 암종 세트 MEDIN_CANCER_SET = '", .cancer_set, "' (가능: ",
+       paste(names(.cancer_sets), collapse = ", "), ") → config.R의 .cancer_sets")
+}
+
 cfg <- list(
-  cancers      = c("COAD", "READ"),        # 예: c("COAD", "READ", "LIHC")
+  cancer_set   = .cancer_set,
+  cancers      = .cancer_sets[[.cancer_set]]$cancers,   # 세트에서 선택 (스크립트 인자가 있으면 그쪽 우선)
   clinical_dir = "database",               # <CANCER>.sav 위치
   gene_dir     = "database/gene_files",    # <CANCER>_<split>_<GENE>.csv 위치
   gene_pattern = "^([A-Za-z]+)_(\\d+_\\d+)_(.+)\\.csv$",   # 암종, split, 유전자
@@ -38,8 +56,8 @@ cfg <- list(
 
   # Cox 모형 (04)
   cox_gene_term        = "continuous",          # 다변량/층화/시간 분할 Cox의 유전자 항 (04, 06): "group" = High vs Low, "continuous" = log2 1단위
-  cox_covariates       = c("age_g", "gender", "pathologic_stage_12_34", "cea_g"),            # 다변량 보정 변수 (표준 열 이름; 없으면 04/06 중단)
-  cox_uni_covariates   = c("age_g", "gender", "pathologic_stage_12_34", "cea_g"),  # 단변량 표
+  cox_covariates       = .cancer_sets[[.cancer_set]]$cox_covariates,      # 다변량 보정 변수 (표준 열 이름; 없으면 04/06 중단) — 위 암종 세트에서 지정
+  cox_uni_covariates   = .cancer_sets[[.cancer_set]]$cox_uni_covariates,  # 단변량 표
   covariate_scale      = list(age = list(by = 1, label = "Age (per 10 years)")),  # 연속형 단위
   stage_full           = "stage",                                 # EPV 부족 시 교체될 stage 변수
   stage_collapsed      = "pathologic_stage_12_34",                # 교체 변수 (없으면 stage로 생성)
@@ -116,7 +134,12 @@ cfg$schema_default <- list(
 )
 cfg$schema <- list(
   COAD = list(),
-  READ = list()
+  READ = list(),
+  # 폐암 .sav: OS.time(일)/OS(1 = 사망), stage 숫자 1–4, 신보조요법·마지막 접촉일 열 없음
+  LUAD = list(time = "OS.time", status = "OS", stage = "pathologic_stage",
+              neoadjuvant = NA, last_contact = NA),
+  LUSC = list(time = "OS.time", status = "OS", stage = "pathologic_stage", age = "age",
+              neoadjuvant = NA, last_contact = NA)
   # 예: LIHC = list(stage = "ajcc_pathologic_tumor_stage", stage_format = "ajcc_text")
 )
 
@@ -135,8 +158,11 @@ cfg$label_rules_default <- list(
   age_g                  = list(source = "age",                    cutoff = 65, high = "High"),
   pathologic_stage_12_34 = list(source = "pathologic_stage",       cutoff = 2,  high = "1")
 )
-cfg$value_labels <- list(COAD = list(), READ = list())
-cfg$label_rules  <- list(COAD = list(), READ = list())
+# 폐암 .sav의 ageG는 0/1 숫자 (1 = age > 65)
+.lung_age_labels <- list(age_g = c(`0` = "≤65", `1` = "≥66"))
+.lung_age_rules  <- list(age_g = list(source = "age", cutoff = 65, high = "1"))
+cfg$value_labels <- list(COAD = list(), READ = list(), LUAD = .lung_age_labels, LUSC = .lung_age_labels)
+cfg$label_rules  <- list(COAD = list(), READ = list(), LUAD = .lung_age_rules,  LUSC = .lung_age_rules)
 
 # ---- 06 외부 검증 (GEO) ------------------------------------------------------
 # 데이터셋 추가: cfg$geo_datasets에 항목 하나 추가 (코드 수정 없음)
@@ -185,6 +211,8 @@ cfg$geo_datasets <- list(
     subgroup = list(var = "mmr_status", level = "pMMR")     # 이 하위군에서 KM/Cox 반복
   )
 )
+# 현재 암종 세트의 데이터셋만 사용 (validates가 cfg$cancers에 있는 것; 폐암 세트는 아직 없음)
+cfg$geo_datasets <- Filter(function(g) g$validates %in% cfg$cancers, cfg$geo_datasets)
 
 # ---- 상관분석 (03: <C>_correlation_<GENE>.csv, 양식 Table 2·3) -------------
 # 변수 = 해당 유전자 + genes의 <gene>_expression_log2 + clinical의 연속형 원값 (이름 = 표 라벨)
