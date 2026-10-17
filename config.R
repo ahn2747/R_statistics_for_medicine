@@ -241,7 +241,7 @@ cfg$signature_ssgsea_normalize <- FALSE      # GSVA ssgseaParam(normalize =); up
 
 # ---- 실행 파일 (run_gene.R) ---------------------------------------------------
 cfg$rscript <- "C:/Program Files/R/R-4.6.1/bin/Rscript.exe"
-cfg$python  <- if (nzchar(Sys.which("python"))) unname(Sys.which("python")) else "py"   # PATH에 python 없으면 py 런처
+cfg$python <- "py"
 
 # ---- 학생연구자료 내보내기 (90_export.R) --------------------------------------
 cfg$export <- list(
