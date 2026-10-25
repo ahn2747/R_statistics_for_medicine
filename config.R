@@ -9,7 +9,7 @@
 # 세트마다 암종과 Cox 공변량이 다름. 세트끼리 섞지 않음 (BH·export 폴더·양식이 세트 단위)
 #   예 (bash): MEDIN_CANCER_SET=lung Rscript 01_import_clinical.R
 .cancer_sets <- list(
-  colorectal = list(cancers            = c("COAD", "READ"),
+  colorectal = list(cancers            = c("LUAD", "LUSC"),
                     cox_covariates     = c("age_g", "gender", "pathologic_stage_12_34", "cea_g"),
                     cox_uni_covariates = c("age_g", "gender", "pathologic_stage_12_34", "cea_g")),
   lung       = list(cancers            = c("LUAD", "LUSC"),            # CEA 없음 → cea_g 제외
@@ -138,8 +138,7 @@ cfg$schema <- list(
   # 폐암 .sav: OS.time(일)/OS(1 = 사망), stage 숫자 1–4, 신보조요법·마지막 접촉일 열 없음
   # drop_duplicate_raw: 대소문자만 다른 중복 원본 열 (남는 열과 값이 같을 때만 제거, 다르면 01 중단)
   LUAD = list(time = "OS.time", status = "OS", stage = "pathologic_stage",
-              neoadjuvant = NA, last_contact = NA,
-              drop_duplicate_raw = c("BRCA1expression", "BRCA1group")),   # = BRCA1Expression/BRCA1Group
+              neoadjuvant = NA, last_contact = NA),   # = BRCA1Expression/BRCA1Group
   LUSC = list(time = "OS.time", status = "OS", stage = "pathologic_stage", age = "age",
               neoadjuvant = NA, last_contact = NA)
   # 예: LIHC = list(stage = "ajcc_pathologic_tumor_stage", stage_format = "ajcc_text")

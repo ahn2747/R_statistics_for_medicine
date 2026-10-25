@@ -37,17 +37,7 @@ ect2.rename(columns = {"Patient" : "sampleID"}, inplace = True)
 # pyreadstat.write_sav(merged_df, os.path.join(temp_genes_files_dir, "LUSC.sav"))
 
 a = df1
-ntrk3 = pd.read_csv(os.path.join(temp_genes_files_dir, "LUAD_50_50_NTRK3.csv"))
-b = ntrk3[["Patient", "Expression", "Group"]]
-b.rename(columns = {"Patient": "sampleID", "Expression" : "NTRK3expression", "Group" : "NTRK3group"}, inplace = True)
-a.drop(columns=["NTRK3group", "NTRK3expression"], inplace=True)
-trem1 = pd.read_csv(os.path.join(temp_genes_files_dir, "LUAD_50_50_TREM1.csv"))
-c = trem1[["Patient", "Expression", "Group"]]
-a.drop(columns=["TREM1Expression", "TREM1Group"], inplace=True)
-c.rename(columns = {"Patient": "sampleID", "Expression" : "TREM1expression", "Group" : "TREM1group"}, inplace = True)
-a.rename(columns = {"SFTPBExpressino" : "SFTPBexpression", "CDK2Expresion" : "CDK2expression", "RAD51Groupo" : "RAD51group", "gas6Expression" : "GAS6expression","gas6group" : "GAS6group", "tmem125expression" : "TMEM125expression", "tmem125group" : "TMEM125group", "c10orf91expression" : "C10orf91expression", "c10orf91group" : "C10orf91group", "linc00261expression" : "LINC00261expression", "linc00261group" : "LINC00261group"}, inplace=True)
-merged_df = pd.merge(a, b, on="sampleID", how="left")
-merged_df = pd.merge(merged_df, c, on="sampleID", how="left")
-merged_df.to_csv(os.path.join(temp_genes_files_dir, "LUAD_50_50_NTRK3_TREM1_merged.csv"), index=False)
-pyreadstat.write_sav(merged_df, os.path.join(temp_genes_files_dir, "LUAD.sav"))
+df1[df1["sampleID"] == "TCGA-49-6742"]["OS.time"] = 1678
+df1[df1["sampleID"] == "TCGA-49-6742"]["OS"] = 0
+pyreadstat.write_sav(df1, os.path.join(temp_genes_files_dir, "LUAD_os_changed.sav"))
 
