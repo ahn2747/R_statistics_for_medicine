@@ -1,0 +1,2 @@
+﻿"set","n_defined","n_matched","n_used","match_ratio","alpha","pc1_var_explained","random_pc1_pct","random_pc1_p","random_n","seed","n_samples","n_genes_background","filter_rule","n_clinical","n_clinical_no_expression"
+"up",5,5,5,1,0.8012960958036599,0.558807261558153,99.9,0.001998001998001998,1000,2026,492,20976,"log2(TPM+1) >= 1 in >= 20% of samples, non-zero variance",492,0

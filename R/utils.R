@@ -400,8 +400,30 @@ check_schema_columns <- function(raw, schema, cancer) {
 
 # 스키마 열 → 표준 이름, 나머지 → standardize_names
 # (표준 이름과 겹치는 나머지 열은 _src 접미사)
+# 대소문자만 다른 중복 원본 열 제거 (cfg$schema$<C>$drop_duplicate_raw)
+# 표준화 후 같은 이름이 되는 남은 열과 값이 완전히 같을 때만 제거, 아니면 중단
+drop_duplicate_raw <- function(raw, drop) {
+  if (!length(drop)) return(raw)
+  miss <- setdiff(drop, names(raw))
+  if (length(miss)) stop("drop_duplicate_raw 열이 .sav에 없음: ", paste(miss, collapse = ", "),
+                         " → config.R의 cfg$schema 수정")
+  keep <- setdiff(names(raw), drop)
+  key  <- function(x) names(standardize_names(raw[x]))
+  keep_key <- vapply(keep, key, "")
+  for (d in drop) {
+    twin <- keep[keep_key == key(d)]
+    same <- length(twin) == 1 &&
+      identical(as.character(haven::as_factor(raw[[d]])), as.character(haven::as_factor(raw[[twin]])))
+    if (!same) stop("drop_duplicate_raw '", d, "': 같은 이름이 되는 열과 값이 같지 않음 (",
+                    if (length(twin)) paste(twin, collapse = ", ") else "대응 열 없음", ") → .sav 확인")
+    cat(sprintf("  중복 열 제거: %s (= %s)\n", d, twin))
+  }
+  raw[keep]
+}
+
 apply_schema_names <- function(raw, schema) {
   cols  <- schema_columns(schema)
+  raw   <- drop_duplicate_raw(raw, schema$drop_duplicate_raw)
   other <- standardize_names(raw[setdiff(names(raw), cols)])
   clash <- names(other) %in% canon[names(cols)]
   names(other)[clash] <- paste0(names(other)[clash], "_src")

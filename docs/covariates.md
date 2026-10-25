@@ -25,6 +25,7 @@ Every setting below lives in `config.R` (the no-hardcoding / audit-grep rule is 
 | `table1_vars`, `table1_continuous` | 15 clinical variables; `"age"` | 03 | Table 1 rows; which of them are summarized as median [IQR] with Wilcoxon |
 | `value_labels_default`, `label_rules_default` (+ `value_labels$<C>`, `label_rules$<C>`) | stage I–IV, stage I–II/III–IV, CEA ≤5/>5, age ≤65/≥66 | utils (01) | Code → label mapping and consistency cutoffs for derived covariates |
 | `drop_columns` | `"rock2g_01"` | utils (01) | Duplicate columns removed on import |
+| `schema$<C>$drop_duplicate_raw` | LUAD: `BRCA1expression`, `BRCA1group` | utils `apply_schema_names` (01) | Raw .sav columns that differ only in case from another column and would collide after name standardization. Each is dropped before standardization only if its values are identical to the column it collides with; otherwise 01 stops |
 | `geo_dir` | `"data/geo"` | 06 | GEOquery download and eset cache (`<GSE>_<GPL>_eset.rds`) |
 | `geo_probe_rule` | `"max_mean"` | 06 | Which probe of the primary gene is used: `max_mean`, `max_iqr` or `max_sd` (computed over tumors) |
 | `geo_na_values` | `"", "N/A", "NA", "ND", …` | 06 | Raw pheno strings treated as missing |

@@ -136,8 +136,10 @@ cfg$schema <- list(
   COAD = list(),
   READ = list(),
   # 폐암 .sav: OS.time(일)/OS(1 = 사망), stage 숫자 1–4, 신보조요법·마지막 접촉일 열 없음
+  # drop_duplicate_raw: 대소문자만 다른 중복 원본 열 (남는 열과 값이 같을 때만 제거, 다르면 01 중단)
   LUAD = list(time = "OS.time", status = "OS", stage = "pathologic_stage",
-              neoadjuvant = NA, last_contact = NA),
+              neoadjuvant = NA, last_contact = NA,
+              drop_duplicate_raw = c("BRCA1expression", "BRCA1group")),   # = BRCA1Expression/BRCA1Group
   LUSC = list(time = "OS.time", status = "OS", stage = "pathologic_stage", age = "age",
               neoadjuvant = NA, last_contact = NA)
   # 예: LIHC = list(stage = "ajcc_pathologic_tumor_stage", stage_format = "ajcc_text")
@@ -228,6 +230,9 @@ cfg$cor_vars <- list(
 cfg$signatures <- list(
   # 예: MYSIG = list(up = c("GENE1", "GENE2", "GENE3"), down = c("GENE4", "GENE5", "GENE6"),
   #                  source = "Author et al. 2020 (PMID 00000000)", label = "MYSIG")
+  SIG5 = list(up = c("LOXL2", "ITGB1", "PLAUR", "SNAI1", "VEGFC"),
+              source = "investigator-selected a priori (hypothesis-based; not derived from TCGA data)",
+              label = "5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC)")
 )
 cfg$signature_primary_method   <- "ssgsea"   # 메인 점수 (결과 보기 전에 지정): "z", "pc1", "ssgsea", "singscore"
 cfg$signature_min_match        <- 0.8        # 사용(매칭 + 필터 통과) / 정의 하한 (방향별·전체). 미만이면 중단
