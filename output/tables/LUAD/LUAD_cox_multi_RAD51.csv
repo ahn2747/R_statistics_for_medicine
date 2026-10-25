@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"RAD51 expression, log2 (per 1 unit)","",482,175,"1.23 (1.08–1.40)","0.002",
+"Age group, years","≤65 (ref)",232,81,"Reference",,
+"","≥66",250,94,"1.23 (0.91–1.66)","0.187",
+"Sex","Male (ref)",219,82,"Reference",,
+"","Female",263,93,"1.00 (0.74–1.34)","0.984",
+"Pathologic stage group","I–II (ref)",379,116,"Reference",,
+"","III–IV",103,59,"2.34 (1.70–3.22)","<0.001",

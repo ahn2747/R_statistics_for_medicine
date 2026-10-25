@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"KRT14 expression, log2 (per 1 unit)","",482,175,"1.08 (1.02–1.14)","0.005",
+"Age group, years","≤65 (ref)",232,81,"Reference",,
+"","≥66",250,94,"1.13 (0.84–1.53)","0.412",
+"Sex","Male (ref)",219,82,"Reference",,
+"","Female",263,93,"0.98 (0.72–1.32)","0.876",
+"Pathologic stage group","I–II (ref)",379,116,"Reference",,
+"","III–IV",103,59,"2.35 (1.71–3.23)","<0.001",

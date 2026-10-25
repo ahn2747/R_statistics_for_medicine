@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"LINC00261 expression, log2 (per 1 unit)","",482,175,"0.95 (0.90–1.00)","0.032",
+"Age group, years","≤65 (ref)",232,81,"Reference",,
+"","≥66",250,94,"1.15 (0.85–1.55)","0.356",
+"Sex","Male (ref)",219,82,"Reference",,
+"","Female",263,93,"0.96 (0.71–1.29)","0.783",
+"Pathologic stage group","I–II (ref)",379,116,"Reference",,
+"","III–IV",103,59,"2.38 (1.73–3.27)","<0.001",

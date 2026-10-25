@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"ADAM10 expression, log2 (per 1 unit)","",483,210,"1.27 (1.00–1.60)","0.049",
+"Age group, years","≤65 (ref)",187,71,"Reference",,
+"","≥66",296,139,"1.26 (0.94–1.69)","0.122",
+"Sex","Male (ref)",358,161,"Reference",,
+"","Female",125,49,"0.85 (0.62–1.18)","0.334",
+"Pathologic stage group","I–II (ref)",393,161,"Reference",,
+"","III–IV",90,49,"1.56 (1.13–2.15)","0.007",

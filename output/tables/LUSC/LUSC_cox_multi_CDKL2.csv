@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"CDKL2 expression, log2 (per 1 unit)","",483,210,"1.11 (1.01–1.22)","0.035",
+"Age group, years","≤65 (ref)",187,71,"Reference",,
+"","≥66",296,139,"1.29 (0.97–1.73)","0.084",
+"Sex","Male (ref)",357,161,"Reference",,
+"","Female",126,49,"0.79 (0.57–1.09)","0.157",
+"Pathologic stage group","I–II (ref)",394,161,"Reference",,
+"","III–IV",89,49,"1.65 (1.20–2.28)","0.002",

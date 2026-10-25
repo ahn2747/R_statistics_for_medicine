@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"SCD expression, log2 (per 1 unit)","",482,175,"1.12 (0.97–1.28)","0.112",
+"Age group, years","≤65 (ref)",232,81,"Reference",,
+"","≥66",250,94,"1.14 (0.85–1.54)","0.388",
+"Sex","Male (ref)",219,82,"Reference",,
+"","Female",263,93,"1.01 (0.75–1.36)","0.961",
+"Pathologic stage group","I–II (ref)",379,116,"Reference",,
+"","III–IV",103,59,"2.43 (1.77–3.33)","<0.001",

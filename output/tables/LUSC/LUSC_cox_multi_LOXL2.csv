@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"LOXL2 expression, log2 (per 1 unit)","",483,210,"1.06 (0.97–1.16)","0.214",
+"Age group, years","≤65 (ref)",187,71,"Reference",,
+"","≥66",296,139,"1.29 (0.96–1.73)","0.087",
+"Sex","Male (ref)",358,161,"Reference",,
+"","Female",125,49,"0.84 (0.61–1.16)","0.292",
+"Pathologic stage group","I–II (ref)",393,161,"Reference",,
+"","III–IV",90,49,"1.60 (1.16–2.20)","0.005",

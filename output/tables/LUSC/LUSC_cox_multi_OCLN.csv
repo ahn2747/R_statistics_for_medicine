@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"OCLN expression, log2 (per 1 unit)","",483,210,"1.04 (0.92–1.17)","0.557",
+"Age group, years","≤65 (ref)",186,71,"Reference",,
+"","≥66",297,139,"1.32 (0.98–1.76)","0.063",
+"Sex","Male (ref)",357,161,"Reference",,
+"","Female",126,49,"0.82 (0.59–1.13)","0.219",
+"Pathologic stage group","I–II (ref)",393,161,"Reference",,
+"","III–IV",90,49,"1.58 (1.14–2.18)","0.006",

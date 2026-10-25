@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"MYC expression, log2 (per 1 unit)","",482,175,"1.08 (0.94–1.24)","0.271",
+"Age group, years","≤65 (ref)",232,81,"Reference",,
+"","≥66",250,94,"1.12 (0.83–1.51)","0.462",
+"Sex","Male (ref)",219,82,"Reference",,
+"","Female",263,93,"1.00 (0.74–1.35)","0.988",
+"Pathologic stage group","I–II (ref)",379,116,"Reference",,
+"","III–IV",103,59,"2.45 (1.78–3.36)","<0.001",

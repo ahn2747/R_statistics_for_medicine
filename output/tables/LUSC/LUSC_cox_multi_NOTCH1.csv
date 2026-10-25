@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"NOTCH1 expression, log2 (per 1 unit)","",483,209,"1.10 (0.97–1.24)","0.133",
+"Age group, years","≤65 (ref)",186,70,"Reference",,
+"","≥66",297,139,"1.32 (0.99–1.77)","0.059",
+"Sex","Male (ref)",357,160,"Reference",,
+"","Female",126,49,"0.83 (0.60–1.15)","0.259",
+"Pathologic stage group","I–II (ref)",393,160,"Reference",,
+"","III–IV",90,49,"1.62 (1.17–2.23)","0.003",

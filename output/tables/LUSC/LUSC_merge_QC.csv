@@ -1,0 +1,12 @@
+﻿"gene","file","action","n_file","n_matched","n_file_not_in_clinical","file_not_in_clinical","status_mismatch","n","n_low","n_high","median","n_diff_from_median_split","median_split_pass","n_compared","expr_identical_pct","expr_correlation","group_identical_pct"
+"ALDH2","LUSC_50_50_ALDH2.csv","merged",488,488,0,"",0,488,244,244,2217.555,0,TRUE,,,,
+"ERN1","LUSC_50_50_ERN1.csv","merged",488,488,0,"",0,488,244,244,145.6,0,TRUE,,,,
+"HSPD1","LUSC_50_50_HSPD1.csv","merged",488,488,0,"",0,488,244,244,8877.465,0,TRUE,,,,
+"ITGB1","LUSC_50_50_ITGB1.csv","QC only (already in .sav)",488,488,0,"",0,488,244,244,10105.130000000001,0,TRUE,488,100,1,100
+"LOXL2","LUSC_50_50_LOXL2.csv","QC only (already in .sav)",488,488,0,"",0,488,244,244,927.0899999999999,0,TRUE,488,100,1,100
+"MAOB","LUSC_50_50_MAOB.csv","merged",488,488,0,"",0,488,244,244,177.78,0,TRUE,,,,
+"NKX2-1","LUSC_50_50_NKX2-1.csv","merged",488,488,0,"",0,488,244,244,80.15,0,TRUE,,,,
+"PLAUR","LUSC_50_50_PLAUR.csv","QC only (already in .sav)",488,488,0,"",0,488,244,244,1135.15,0,TRUE,488,100,1,100
+"PRKAA2","LUSC_50_50_PRKAA2.csv","merged",488,488,0,"",0,488,244,244,160.37,0,TRUE,,,,
+"SNAI1","LUSC_50_50_SNAI1.csv","QC only (already in .sav)",488,488,0,"",0,488,244,244,93.41,0,TRUE,488,100,1,100
+"VEGFC","LUSC_50_50_VEGFC.csv","QC only (already in .sav)",488,488,0,"",0,488,244,244,94.35,0,TRUE,488,100,1,100

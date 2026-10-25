@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"IGF2BP3 expression, log2 (per 1 unit)","",482,175,"1.08 (1.02–1.15)","0.012",
+"Age group, years","≤65 (ref)",232,81,"Reference",,
+"","≥66",250,94,"1.18 (0.88–1.60)","0.268",
+"Sex","Male (ref)",219,82,"Reference",,
+"","Female",263,93,"0.96 (0.71–1.29)","0.789",
+"Pathologic stage group","I–II (ref)",379,116,"Reference",,
+"","III–IV",103,59,"2.32 (1.68–3.19)","<0.001",

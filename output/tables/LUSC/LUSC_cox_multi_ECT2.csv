@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"ECT2 expression, log2 (per 1 unit)","",483,209,"0.89 (0.77–1.03)","0.128",
+"Age group, years","≤65 (ref)",187,71,"Reference",,
+"","≥66",296,138,"1.28 (0.96–1.72)","0.091",
+"Sex","Male (ref)",358,161,"Reference",,
+"","Female",125,48,"0.81 (0.58–1.11)","0.192",
+"Pathologic stage group","I–II (ref)",394,161,"Reference",,
+"","III–IV",89,48,"1.54 (1.11–2.14)","0.009",

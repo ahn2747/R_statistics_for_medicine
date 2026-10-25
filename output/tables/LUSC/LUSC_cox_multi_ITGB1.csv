@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"ITGB1 expression, log2 (per 1 unit)","",483,210,"1.19 (0.98–1.43)","0.073",
+"Age group, years","≤65 (ref)",187,71,"Reference",,
+"","≥66",296,139,"1.28 (0.96–1.72)","0.092",
+"Sex","Male (ref)",357,161,"Reference",,
+"","Female",126,49,"0.84 (0.61–1.16)","0.280",
+"Pathologic stage group","I–II (ref)",394,161,"Reference",,
+"","III–IV",89,49,"1.58 (1.14–2.18)","0.005",

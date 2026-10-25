@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"PTX3 expression, log2 (per 1 unit)","",482,175,"1.08 (0.98–1.19)","0.110",
+"Age group, years","≤65 (ref)",232,81,"Reference",,
+"","≥66",250,94,"1.15 (0.85–1.54)","0.371",
+"Sex","Male (ref)",219,82,"Reference",,
+"","Female",263,93,"0.96 (0.71–1.29)","0.779",
+"Pathologic stage group","I–II (ref)",379,116,"Reference",,
+"","III–IV",103,59,"2.44 (1.78–3.35)","<0.001",

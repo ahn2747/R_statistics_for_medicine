@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"DLGAP5 expression, log2 (per 1 unit)","",482,175,"1.28 (1.15–1.43)","<0.001",
+"Age group, years","≤65 (ref)",232,81,"Reference",,
+"","≥66",250,94,"1.26 (0.93–1.70)","0.137",
+"Sex","Male (ref)",219,82,"Reference",,
+"","Female",263,93,"1.00 (0.75–1.35)","0.979",
+"Pathologic stage group","I–II (ref)",379,116,"Reference",,
+"","III–IV",103,59,"2.38 (1.74–3.27)","<0.001",

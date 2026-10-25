@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"HELLS expression, log2 (per 1 unit)","",482,175,"1.16 (1.02–1.31)","0.019",
+"Age group, years","≤65 (ref)",232,81,"Reference",,
+"","≥66",250,94,"1.21 (0.89–1.63)","0.225",
+"Sex","Male (ref)",219,82,"Reference",,
+"","Female",263,93,"0.99 (0.73–1.33)","0.940",
+"Pathologic stage group","I–II (ref)",379,116,"Reference",,
+"","III–IV",103,59,"2.38 (1.73–3.27)","<0.001",

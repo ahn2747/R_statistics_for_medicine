@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"SFTPB expression, log2 (per 1 unit)","",482,175,"0.91 (0.87–0.95)","<0.001",
+"Age group, years","≤65 (ref)",232,81,"Reference",,
+"","≥66",250,94,"1.24 (0.92–1.67)","0.165",
+"Sex","Male (ref)",219,82,"Reference",,
+"","Female",263,93,"0.95 (0.71–1.28)","0.736",
+"Pathologic stage group","I–II (ref)",379,116,"Reference",,
+"","III–IV",103,59,"2.38 (1.74–3.27)","<0.001",

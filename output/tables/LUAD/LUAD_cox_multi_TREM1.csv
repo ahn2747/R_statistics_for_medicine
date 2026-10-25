@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"TREM1 expression, log2 (per 1 unit)","",482,175,"0.90 (0.83–0.98)","0.014",
+"Age group, years","≤65 (ref)",232,81,"Reference",,
+"","≥66",250,94,"1.12 (0.83–1.51)","0.464",
+"Sex","Male (ref)",219,82,"Reference",,
+"","Female",263,93,"0.99 (0.73–1.33)","0.941",
+"Pathologic stage group","I–II (ref)",379,116,"Reference",,
+"","III–IV",103,59,"2.61 (1.90–3.58)","<0.001",

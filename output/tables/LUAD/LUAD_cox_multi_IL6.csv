@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"IL6 expression, log2 (per 1 unit)","",482,175,"1.01 (0.93–1.09)","0.824",
+"Age group, years","≤65 (ref)",232,81,"Reference",,
+"","≥66",250,94,"1.14 (0.85–1.54)","0.388",
+"Sex","Male (ref)",219,82,"Reference",,
+"","Female",263,93,"0.98 (0.73–1.32)","0.881",
+"Pathologic stage group","I–II (ref)",379,116,"Reference",,
+"","III–IV",103,59,"2.47 (1.80–3.39)","<0.001",

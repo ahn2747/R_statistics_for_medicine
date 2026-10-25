@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"VIM expression, log2 (per 1 unit)","",483,209,"1.09 (0.96–1.23)","0.177",
+"Age group, years","≤65 (ref)",186,70,"Reference",,
+"","≥66",297,139,"1.32 (0.99–1.76)","0.062",
+"Sex","Male (ref)",358,161,"Reference",,
+"","Female",125,48,"0.79 (0.57–1.10)","0.159",
+"Pathologic stage group","I–II (ref)",393,160,"Reference",,
+"","III–IV",90,49,"1.59 (1.15–2.20)","0.005",

@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"SMAD7 expression, log2 (per 1 unit)","",483,210,"1.24 (1.07–1.44)","0.004",
+"Age group, years","≤65 (ref)",187,71,"Reference",,
+"","≥66",296,139,"1.26 (0.94–1.68)","0.123",
+"Sex","Male (ref)",357,161,"Reference",,
+"","Female",126,49,"0.79 (0.58–1.10)","0.162",
+"Pathologic stage group","I–II (ref)",393,161,"Reference",,
+"","III–IV",90,49,"1.56 (1.13–2.15)","0.007",

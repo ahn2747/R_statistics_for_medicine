@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"PLK1 expression, log2 (per 1 unit)","",483,210,"0.98 (0.81–1.18)","0.798",
+"Age group, years","≤65 (ref)",186,71,"Reference",,
+"","≥66",297,139,"1.30 (0.97–1.74)","0.077",
+"Sex","Male (ref)",357,161,"Reference",,
+"","Female",126,49,"0.82 (0.60–1.13)","0.233",
+"Pathologic stage group","I–II (ref)",393,161,"Reference",,
+"","III–IV",90,49,"1.58 (1.15–2.18)","0.005",

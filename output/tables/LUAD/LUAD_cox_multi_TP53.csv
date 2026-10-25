@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"TP53 expression, log2 (per 1 unit)","",482,175,"0.90 (0.76–1.06)","0.221",
+"Age group, years","≤65 (ref)",232,81,"Reference",,
+"","≥66",250,94,"1.16 (0.86–1.56)","0.334",
+"Sex","Male (ref)",219,82,"Reference",,
+"","Female",263,93,"0.98 (0.72–1.32)","0.876",
+"Pathologic stage group","I–II (ref)",379,116,"Reference",,
+"","III–IV",103,59,"2.46 (1.80–3.38)","<0.001",

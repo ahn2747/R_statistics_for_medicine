@@ -1,0 +1,37 @@
+﻿"Characteristic","N = 492"
+"Age, years","66.0 [59.0, 73.0]"
+"Missing","2"
+"Age group, years",
+"≤65","236 (48.2%)"
+"≥66","254 (51.8%)"
+"Missing","2"
+"Sex",
+"Male","224 (45.7%)"
+"Female","266 (54.3%)"
+"Missing","2"
+"Pathologic stage",
+"I","262 (54.4%)"
+"II","117 (24.3%)"
+"III","79 (16.4%)"
+"IV","24 (5.0%)"
+"Missing","10"
+"Pathologic T",
+"T1","164 (33.7%)"
+"T2","260 (53.4%)"
+"T3","45 (9.2%)"
+"T4","18 (3.7%)"
+"Missing","5"
+"Pathologic N",
+"N0","316 (66.0%)"
+"N1","93 (19.4%)"
+"N2","68 (14.2%)"
+"N3","2 (0.4%)"
+"Missing","13"
+"Pathologic M",
+"M0","322 (93.1%)"
+"M1","24 (6.9%)"
+"Missing","146"
+"Pathologic stage group",
+"I–II","379 (78.6%)"
+"III–IV","103 (21.4%)"
+"Missing","10"

@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"MAOB expression, log2 (per 1 unit)","",483,209,"1.08 (0.99–1.17)","0.096",
+"Age group, years","≤65 (ref)",187,71,"Reference",,
+"","≥66",296,138,"1.28 (0.95–1.71)","0.100",
+"Sex","Male (ref)",358,161,"Reference",,
+"","Female",125,48,"0.82 (0.60–1.14)","0.243",
+"Pathologic stage group","I–II (ref)",393,160,"Reference",,
+"","III–IV",90,49,"1.60 (1.16–2.21)","0.004",

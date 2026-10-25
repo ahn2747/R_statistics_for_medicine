@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"NTRK3 expression, log2 (per 1 unit)","",483,210,"1.08 (1.00–1.16)","0.042",
+"Age group, years","≤65 (ref)",186,71,"Reference",,
+"","≥66",297,139,"1.29 (0.96–1.72)","0.089",
+"Sex","Male (ref)",357,161,"Reference",,
+"","Female",126,49,"0.83 (0.60–1.14)","0.243",
+"Pathologic stage group","I–II (ref)",394,161,"Reference",,
+"","III–IV",89,49,"1.60 (1.16–2.20)","0.004",

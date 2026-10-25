@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"XRCC3 expression, log2 (per 1 unit)","",482,175,"1.14 (0.95–1.38)","0.156",
+"Age group, years","≤65 (ref)",232,81,"Reference",,
+"","≥66",250,94,"1.17 (0.87–1.58)","0.308",
+"Sex","Male (ref)",219,82,"Reference",,
+"","Female",263,93,"0.97 (0.72–1.30)","0.830",
+"Pathologic stage group","I–II (ref)",379,116,"Reference",,
+"","III–IV",103,59,"2.44 (1.78–3.35)","<0.001",

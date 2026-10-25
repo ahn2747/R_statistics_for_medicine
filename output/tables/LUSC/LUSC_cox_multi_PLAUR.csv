@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"PLAUR expression, log2 (per 1 unit)","",483,210,"1.14 (1.00–1.30)","0.056",
+"Age group, years","≤65 (ref)",187,71,"Reference",,
+"","≥66",296,139,"1.32 (0.99–1.76)","0.061",
+"Sex","Male (ref)",357,161,"Reference",,
+"","Female",126,49,"0.81 (0.59–1.12)","0.211",
+"Pathologic stage group","I–II (ref)",393,161,"Reference",,
+"","III–IV",90,49,"1.61 (1.17–2.23)","0.004",

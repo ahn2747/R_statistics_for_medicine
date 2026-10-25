@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"ALDH2 expression, log2 (per 1 unit)","",482,175,"0.83 (0.72–0.96)","0.015",
+"Age group, years","≤65 (ref)",232,81,"Reference",,
+"","≥66",250,94,"1.21 (0.89–1.63)","0.221",
+"Sex","Male (ref)",219,82,"Reference",,
+"","Female",263,93,"0.94 (0.70–1.27)","0.679",
+"Pathologic stage group","I–II (ref)",379,116,"Reference",,
+"","III–IV",103,59,"2.32 (1.68–3.19)","<0.001",

@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"C10ORF91 expression, log2 (per 1 unit)","",483,209,"0.93 (0.85–1.02)","0.135",
+"Age group, years","≤65 (ref)",186,70,"Reference",,
+"","≥66",297,139,"1.31 (0.98–1.76)","0.066",
+"Sex","Male (ref)",357,160,"Reference",,
+"","Female",126,49,"0.79 (0.57–1.10)","0.168",
+"Pathologic stage group","I–II (ref)",393,160,"Reference",,
+"","III–IV",90,49,"1.62 (1.17–2.24)","0.004",

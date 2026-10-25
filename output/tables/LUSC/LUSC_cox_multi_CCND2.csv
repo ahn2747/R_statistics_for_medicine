@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"CCND2 expression, log2 (per 1 unit)","",483,209,"0.93 (0.86–1.01)","0.085",
+"Age group, years","≤65 (ref)",187,71,"Reference",,
+"","≥66",296,138,"1.28 (0.95–1.71)","0.099",
+"Sex","Male (ref)",358,161,"Reference",,
+"","Female",125,48,"0.81 (0.59–1.12)","0.201",
+"Pathologic stage group","I–II (ref)",394,161,"Reference",,
+"","III–IV",89,48,"1.57 (1.13–2.17)","0.007",

@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"NKX2_1 expression, log2 (per 1 unit)","",483,209,"1.06 (1.00–1.11)","0.041",
+"Age group, years","≤65 (ref)",186,70,"Reference",,
+"","≥66",297,139,"1.32 (0.99–1.77)","0.060",
+"Sex","Male (ref)",357,160,"Reference",,
+"","Female",126,49,"0.78 (0.56–1.08)","0.136",
+"Pathologic stage group","I–II (ref)",393,160,"Reference",,
+"","III–IV",90,49,"1.60 (1.16–2.20)","0.005",

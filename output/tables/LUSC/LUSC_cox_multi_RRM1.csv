@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"RRM1 expression, log2 (per 1 unit)","",483,209,"1.00 (0.81–1.22)","0.968",
+"Age group, years","≤65 (ref)",187,71,"Reference",,
+"","≥66",296,138,"1.31 (0.98–1.75)","0.069",
+"Sex","Male (ref)",357,160,"Reference",,
+"","Female",126,49,"0.83 (0.60–1.15)","0.258",
+"Pathologic stage group","I–II (ref)",393,160,"Reference",,
+"","III–IV",90,49,"1.59 (1.15–2.20)","0.005",

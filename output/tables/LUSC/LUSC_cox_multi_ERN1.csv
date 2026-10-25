@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"ERN1 expression, log2 (per 1 unit)","",483,210,"1.20 (1.03–1.39)","0.020",
+"Age group, years","≤65 (ref)",186,71,"Reference",,
+"","≥66",297,139,"1.30 (0.97–1.74)","0.075",
+"Sex","Male (ref)",357,161,"Reference",,
+"","Female",126,49,"0.83 (0.60–1.15)","0.262",
+"Pathologic stage group","I–II (ref)",393,161,"Reference",,
+"","III–IV",90,49,"1.60 (1.16–2.21)","0.004",

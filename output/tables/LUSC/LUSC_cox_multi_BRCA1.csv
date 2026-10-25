@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"BRCA1 expression, log2 (per 1 unit)","",483,210,"0.93 (0.79–1.10)","0.414",
+"Age group, years","≤65 (ref)",187,71,"Reference",,
+"","≥66",296,139,"1.29 (0.97–1.73)","0.083",
+"Sex","Male (ref)",357,161,"Reference",,
+"","Female",126,49,"0.81 (0.59–1.12)","0.206",
+"Pathologic stage group","I–II (ref)",393,161,"Reference",,
+"","III–IV",90,49,"1.57 (1.14–2.17)","0.006",

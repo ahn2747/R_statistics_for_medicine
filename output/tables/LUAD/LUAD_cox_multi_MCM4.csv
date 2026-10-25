@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"MCM4 expression, log2 (per 1 unit)","",482,175,"1.26 (1.09–1.46)","0.002",
+"Age group, years","≤65 (ref)",232,81,"Reference",,
+"","≥66",250,94,"1.23 (0.91–1.66)","0.180",
+"Sex","Male (ref)",219,82,"Reference",,
+"","Female",263,93,"1.02 (0.75–1.37)","0.908",
+"Pathologic stage group","I–II (ref)",379,116,"Reference",,
+"","III–IV",103,59,"2.39 (1.74–3.28)","<0.001",

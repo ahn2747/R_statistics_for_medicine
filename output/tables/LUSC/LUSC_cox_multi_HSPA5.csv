@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"HSPA5 expression, log2 (per 1 unit)","",483,209,"1.33 (1.01–1.76)","0.044",
+"Age group, years","≤65 (ref)",187,71,"Reference",,
+"","≥66",296,138,"1.33 (0.99–1.78)","0.055",
+"Sex","Male (ref)",357,160,"Reference",,
+"","Female",126,49,"0.82 (0.59–1.13)","0.223",
+"Pathologic stage group","I–II (ref)",393,160,"Reference",,
+"","III–IV",90,49,"1.60 (1.16–2.21)","0.004",

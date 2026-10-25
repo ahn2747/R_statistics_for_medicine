@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"TMEM125 expression, log2 (per 1 unit)","",483,210,"1.10 (1.02–1.19)","0.018",
+"Age group, years","≤65 (ref)",186,71,"Reference",,
+"","≥66",297,139,"1.31 (0.98–1.74)","0.071",
+"Sex","Male (ref)",357,161,"Reference",,
+"","Female",126,49,"0.77 (0.56–1.07)","0.121",
+"Pathologic stage group","I–II (ref)",393,161,"Reference",,
+"","III–IV",90,49,"1.54 (1.11–2.12)","0.009",

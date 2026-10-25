@@ -1,0 +1,8 @@
+﻿"Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"SNAI1 expression, log2 (per 1 unit)","",483,210,"1.21 (1.07–1.37)","0.002",
+"Age group, years","≤65 (ref)",186,71,"Reference",,
+"","≥66",297,139,"1.31 (0.98–1.74)","0.070",
+"Sex","Male (ref)",358,161,"Reference",,
+"","Female",125,49,"0.81 (0.59–1.12)","0.199",
+"Pathologic stage group","I–II (ref)",393,161,"Reference",,
+"","III–IV",90,49,"1.49 (1.08–2.07)","0.016",
