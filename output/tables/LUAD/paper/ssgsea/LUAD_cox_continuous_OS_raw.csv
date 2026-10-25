@@ -1,0 +1,10 @@
+﻿"model","model_n","model_events","epv","term","variable","level","reference","n","events","hr","lo","hi","p","p_overall"
+"Univariable",490,177,177,"score_sd","Signature score (ssGSEA) (per 1 SD)","",FALSE,490,177,1.4287748452922242,1.2281492267715413,1.662173874347565,3.8007027488672102e-6,
+"Multivariable",330,116,23.2,"score_sd","Signature score (ssGSEA) (per 1 SD)","",FALSE,330,116,1.4611000499105875,1.207275472493774,1.7682901744363326,9.832495492539015e-5,
+"Multivariable",330,116,23.2,"age_g","Age group, years","≤65",TRUE,158,53,1,,,,
+"Multivariable",330,116,23.2,"age_g","Age group, years","≥66",FALSE,172,63,1.3619655497406251,0.9387623448230109,1.975952879778114,0.10371009782585659,
+"Multivariable",330,116,23.2,"gender","Sex","Male",TRUE,156,63,1,,,,
+"Multivariable",330,116,23.2,"gender","Sex","Female",FALSE,174,53,0.6957147390501033,0.47592992952986146,1.0169963435787335,0.061073753344160854,
+"Multivariable",330,116,23.2,"number_pack_years_smoked_per10","Pack-years (per 10)","",FALSE,330,116,0.9950127870414254,0.9278382769625444,1.0670506606141148,0.888507690065354,
+"Multivariable",330,116,23.2,"pathologic_stage_12_34","Pathologic stage group","I–II",TRUE,257,77,1,,,,
+"Multivariable",330,116,23.2,"pathologic_stage_12_34","Pathologic stage group","III–IV",FALSE,73,39,2.1082680939512923,1.4287716674867192,3.110920000108646,1.7160120903277813e-4,

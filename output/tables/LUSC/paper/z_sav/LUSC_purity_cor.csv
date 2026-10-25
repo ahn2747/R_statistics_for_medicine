@@ -1,0 +1,9 @@
+﻿"var1","var2","method","r","p","n"
+"Signature score","Tumor purity (ESTIMATE)","pearson",-0.49166544095039033,3.980790923269195e-31,489
+"Signature score","ESTIMATE score","pearson",0.4897853669022598,7.221581293052539e-31,489
+"Signature score","Stromal score","pearson",0.5632510051929355,2.8042931933696747e-42,489
+"Signature score","Immune score","pearson",0.36814188816408294,3.848063625002202e-17,489
+"Signature score","Tumor purity (ESTIMATE)","spearman",-0.6041846689394859,5.548038985491486e-50,489
+"Signature score","ESTIMATE score","spearman",0.6041846689394859,5.548038985491486e-50,489
+"Signature score","Stromal score","spearman",0.6916908008300374,7.611091042309961e-71,489
+"Signature score","Immune score","spearman",0.4680348394009118,5.462920082739303e-28,489

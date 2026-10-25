@@ -1,37 +1,37 @@
 ﻿"method","gene","model","term","chisq","df","p","flag"
-"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Univariable (High vs Low)","group",3.329,1,0.06807,FALSE
-"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Univariable (High vs Low)","GLOBAL",3.329,1,0.06807,FALSE
-"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Univariable (per 1 SD)","score_sd",4.625,1,0.03151,TRUE
-"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Univariable (per 1 SD)","GLOBAL",4.625,1,0.03151,TRUE
-"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Multivariable (per 1 SD)","score_sd",5.78,1,0.01621,TRUE
-"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Multivariable (per 1 SD)","age_g",0.831,1,0.362,FALSE
-"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Multivariable (per 1 SD)","gender",4.653,1,0.03101,TRUE
-"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Multivariable (per 1 SD)","pathologic_stage_12_34",2.665,1,0.1026,FALSE
-"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Multivariable (per 1 SD)","GLOBAL",11.943,4,0.01778,TRUE
-"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Univariable (High vs Low)","group",2.599,1,0.1069,FALSE
-"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Univariable (High vs Low)","GLOBAL",2.599,1,0.1069,FALSE
-"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Univariable (per 1 SD)","score_sd",4.728,1,0.02968,TRUE
-"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Univariable (per 1 SD)","GLOBAL",4.728,1,0.02968,TRUE
-"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Multivariable (per 1 SD)","score_sd",5.916,1,0.01501,TRUE
-"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Multivariable (per 1 SD)","age_g",0.839,1,0.3597,FALSE
-"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Multivariable (per 1 SD)","gender",4.639,1,0.03125,TRUE
-"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Multivariable (per 1 SD)","pathologic_stage_12_34",2.658,1,0.1031,FALSE
-"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Multivariable (per 1 SD)","GLOBAL",12.096,4,0.01665,TRUE
-"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Univariable (High vs Low)","group",2.37,1,0.1237,FALSE
-"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Univariable (High vs Low)","GLOBAL",2.37,1,0.1237,FALSE
-"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Univariable (per 1 SD)","score_sd",5.411,1,0.02001,TRUE
-"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Univariable (per 1 SD)","GLOBAL",5.411,1,0.02001,TRUE
-"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Multivariable (per 1 SD)","score_sd",6.113,1,0.01342,TRUE
-"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Multivariable (per 1 SD)","age_g",0.787,1,0.375,FALSE
-"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Multivariable (per 1 SD)","gender",4.962,1,0.02591,TRUE
-"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Multivariable (per 1 SD)","pathologic_stage_12_34",1.926,1,0.1652,FALSE
-"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Multivariable (per 1 SD)","GLOBAL",12.7,4,0.01284,TRUE
-"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Univariable (High vs Low)","group",1.616,1,0.2036,FALSE
-"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Univariable (High vs Low)","GLOBAL",1.616,1,0.2036,FALSE
-"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Univariable (per 1 SD)","score_sd",5.629,1,0.01767,TRUE
-"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Univariable (per 1 SD)","GLOBAL",5.629,1,0.01767,TRUE
-"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Multivariable (per 1 SD)","score_sd",6.336,1,0.01183,TRUE
-"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Multivariable (per 1 SD)","age_g",0.799,1,0.3713,FALSE
-"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Multivariable (per 1 SD)","gender",5.007,1,0.02525,TRUE
-"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Multivariable (per 1 SD)","pathologic_stage_12_34",1.895,1,0.1687,FALSE
-"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Multivariable (per 1 SD)","GLOBAL",12.934,4,0.0116,TRUE
+"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Univariable (High vs Low)","group",3.326,1,0.06819,FALSE
+"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Univariable (High vs Low)","GLOBAL",3.326,1,0.06819,FALSE
+"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Univariable (per 1 SD)","score_sd",4.637,1,0.03129,TRUE
+"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Univariable (per 1 SD)","GLOBAL",4.637,1,0.03129,TRUE
+"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Multivariable (per 1 SD)","score_sd",5.813,1,0.01591,TRUE
+"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Multivariable (per 1 SD)","age_g",0.843,1,0.3586,FALSE
+"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Multivariable (per 1 SD)","gender",4.641,1,0.03121,TRUE
+"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Multivariable (per 1 SD)","pathologic_stage_12_34",2.624,1,0.1053,FALSE
+"z","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) Mean z-score","Multivariable (per 1 SD)","GLOBAL",11.972,4,0.01756,TRUE
+"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Univariable (High vs Low)","group",2.595,1,0.1072,FALSE
+"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Univariable (High vs Low)","GLOBAL",2.595,1,0.1072,FALSE
+"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Univariable (per 1 SD)","score_sd",4.739,1,0.02948,TRUE
+"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Univariable (per 1 SD)","GLOBAL",4.739,1,0.02948,TRUE
+"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Multivariable (per 1 SD)","score_sd",5.949,1,0.01472,TRUE
+"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Multivariable (per 1 SD)","age_g",0.851,1,0.3563,FALSE
+"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Multivariable (per 1 SD)","gender",4.628,1,0.03145,TRUE
+"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Multivariable (per 1 SD)","pathologic_stage_12_34",2.616,1,0.1058,FALSE
+"pc1","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) PC1","Multivariable (per 1 SD)","GLOBAL",12.127,4,0.01643,TRUE
+"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Univariable (High vs Low)","group",2.372,1,0.1235,FALSE
+"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Univariable (High vs Low)","GLOBAL",2.372,1,0.1235,FALSE
+"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Univariable (per 1 SD)","score_sd",5.429,1,0.0198,TRUE
+"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Univariable (per 1 SD)","GLOBAL",5.429,1,0.0198,TRUE
+"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Multivariable (per 1 SD)","score_sd",6.127,1,0.01332,TRUE
+"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Multivariable (per 1 SD)","age_g",0.793,1,0.3733,FALSE
+"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Multivariable (per 1 SD)","gender",4.963,1,0.0259,TRUE
+"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Multivariable (per 1 SD)","pathologic_stage_12_34",1.87,1,0.1715,FALSE
+"ssgsea","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) ssGSEA","Multivariable (per 1 SD)","GLOBAL",12.722,4,0.01272,TRUE
+"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Univariable (High vs Low)","group",1.619,1,0.2032,FALSE
+"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Univariable (High vs Low)","GLOBAL",1.619,1,0.2032,FALSE
+"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Univariable (per 1 SD)","score_sd",5.647,1,0.01749,TRUE
+"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Univariable (per 1 SD)","GLOBAL",5.647,1,0.01749,TRUE
+"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Multivariable (per 1 SD)","score_sd",6.346,1,0.01177,TRUE
+"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Multivariable (per 1 SD)","age_g",0.804,1,0.37,FALSE
+"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Multivariable (per 1 SD)","gender",5.011,1,0.02519,TRUE
+"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Multivariable (per 1 SD)","pathologic_stage_12_34",1.837,1,0.1754,FALSE
+"singscore","5-gene signature (LOXL2, ITGB1, PLAUR, SNAI1, VEGFC) singscore","Multivariable (per 1 SD)","GLOBAL",12.952,4,0.01151,TRUE

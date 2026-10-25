@@ -9,7 +9,7 @@
 # 세트마다 암종과 Cox 공변량이 다름. 세트끼리 섞지 않음 (BH·export 폴더·양식이 세트 단위)
 #   예 (bash): MEDIN_CANCER_SET=lung Rscript 01_import_clinical.R
 .cancer_sets <- list(
-  colorectal = list(cancers            = c("LUAD", "LUSC"),
+  colorectal = list(cancers            = c("COAD", "READ"),
                     cox_covariates     = c("age_g", "gender", "pathologic_stage_12_34", "cea_g"),
                     cox_uni_covariates = c("age_g", "gender", "pathologic_stage_12_34", "cea_g")),
   lung       = list(cancers            = c("LUAD", "LUSC"),            # CEA 없음 → cea_g 제외
@@ -242,6 +242,123 @@ cfg$signature_expr_filter      <- list(      # 저발현 필터 (통과 행렬 =
 )
 cfg$signature_random_n         <- 1000       # PC1 설명력 비교용 무작위 gene set 반복 (seed = cfg$seed)
 cfg$signature_ssgsea_normalize <- FALSE      # GSVA ssgseaParam(normalize =); up/down은 한 번에 계산
+
+# ---- 논문 분석 트랙 (20_paper_prep.R → 21_paper_analysis.R, 22_paper_geo.R; 폐암 세트) ---------------
+# 기존 유전자 파이프라인·11–13과 분리. 결과: output/{tables,figures}/<C>/paper/<점수>/, GEO는 output/*/GEO/paper/
+cfg$paper <- list(
+  subdir    = "paper",
+  signature = "SIG5",                        # cfg$signatures 이름 (ssGSEA 점수 = 11의 <C>_sigscores_<SIG>.csv)
+  # 점수: 첫 번째 = 메인. source "sav" = .sav의 점수/그룹 열 (점수 = check_genes 원 발현 z 평균 → 20에서 재계산 확인),
+  #       "sigscores" = 11의 점수 파일 method 열, 점수 샘플 전체에서 median_split() (12와 같음)
+  scores = list(
+    z_sav  = list(source = "sav", score = "signature_score_loxl2_itgb1_plaur_snai1_vegfc",
+                  group = "signature_group_loxl2_itgb1_plaur_snai1_vegfc",
+                  check_genes = c("LOXL2", "ITGB1", "PLAUR", "SNAI1", "VEGFC"), label = "Signature score"),
+    ssgsea = list(source = "sigscores", method = "ssgsea", label = "Signature score (ssGSEA)")
+  ),
+  z_check_tol = 1e-6,                        # .sav 점수 vs 재계산 z 평균 허용 차이
+  # 종점: time_unit "days"면 /30.44 → 개월
+  endpoints = list(
+    OS  = list(time = "os_months", event = "status", time_unit = "months", event_value = 1, label = "Overall survival"),
+    RFS = list(time = "rfs_time",  event = "rfs",    time_unit = "days",   event_value = 1, label = "Relapse-free survival")
+  ),
+  # 1·2번 상관 (Table 2, 3, 8, 9): 점수 + clinical + cor_genes + cor_sig_genes (발현 = <gene>_expression_log2, 03과 같음)
+  cor_clinical  = c(number_pack_years_smoked = "Pack-years", age = "Age"),
+  cor_genes     = list(LUAD = c("KRAS", "TP53", "ALK", "BRAF", "EGFR"),
+                       LUSC = c("TP53", "CDKN2A", "SOX2", "PIK3CA", "NOTCH1")),
+  cor_sig_genes = c("LOXL2", "ITGB1", "PLAUR", "SNAI1", "VEGFC"),
+  # 4번 Table 1 (signature High vs Low): χ² 또는 Fisher (기대빈도 < 5 셀이 있으면 Fisher)
+  table1_vars = c("age_g", "gender", "smoking", "pathologic_stage", "pathologic_t", "pathologic_n", "pathologic_m"),
+  # 5번 Cox: 단변량 = 그룹 + 각 변수, 다변량 = 전부 (완전 사례) + 민감도 (sens_drop 제외)
+  cox_vars  = c("age_g", "gender", "number_pack_years_smoked", "pathologic_stage_12_34"),
+  covariate_scale = list(number_pack_years_smoked = list(by = 10, label = "Pack-years (per 10)"),   # 논문 스크립트에서만 cfg$covariate_scale에 추가
+                         purity_pct = list(by = 10, label = "Tumor purity (per 10%)")),           # purity_pct = 100 × ESTIMATE purity
+  sens_drop = c("number_pack_years_smoked"),
+  cox_endpoints = c("OS", "RFS"),
+  # 6번 후보 유전자 스크리닝: KM log-rank (median 그룹 = merged.rds의 <gene>_group), p < alpha 판정, BH q는 보고용
+  candidate_genes = c("LOXL2", "ITGB1", "ECT2", "PLAUR", "NTRK3", "FAT1", "CCND2", "SNAI1", "NKX2-1", "SMAD7",
+                      "XRCC3", "HSPD1", "IGF2BP1", "ADAM10", "ERN1", "VEGFC", "PRKAA2", "MAOB", "ALDH2"),
+  candidate_endpoints = c("OS"),
+  candidate_alpha     = 0.05,
+  # 7번 개별 유전자 KM
+  km_genes     = c("LOXL2", "ITGB1", "PLAUR", "SNAI1", "VEGFC"),
+  km_endpoints = c("OS", "RFS"),
+  # 8번 tumor purity (ESTIMATE, 02a의 log2(TPM+1) 행렬) + 부분 상관 (purity 보정)
+  purity = list(method = "estimate",
+                partial_genes = list(LUAD = c("TP53", "ALK"), LUSC = c("SOX2", "PIK3CA", "TP53")),
+                cox_endpoints = c("OS", "RFS")),
+  # 10번 cut-off 민감도: 연속형 (1 SD당) + 분위 그룹 (가장 낮은 분위 = 기준)
+  cutoff_endpoints = c("OS"),
+  cutpoints = c(Tertile = 3, Quartile = 4),
+  # 3번 GSEA (Table 6): 원 결과 파일 재출력 (재계산 없음; 읽기 전용)
+  gsea_file = list(LUAD = "C:/Users/안지훈/Documents/0.학생연구자료/medin_1팀/1팀_GSEA2차_LUAD.csv"),
+  # 흡연 상태: GDC clinical (TCGAbiolinks::GDCquery_clinic) → data/processed/<C>_gdc_clinical.csv 캐시
+  #   .sav의 SmokingStatus는 pack-years 기록 여부와 같아서 사용하지 않음
+  smoking = list(field = "tobacco_smoking_status", pack_field = "pack_years_smoked",
+                 levels = c("Never", "Former", "Current"),     # 첫 번째 = 기준
+                 map = c(`Lifelong Non-Smoker` = "Never", `Current Smoker` = "Current",
+                         `Current Reformed Smoker for > 15 yrs` = "Former",
+                         `Current Reformed Smoker for < or = 15 yrs` = "Former",
+                         `Current Reformed Smoker, Duration Not Specified` = "Former"),
+                 na = c("Not Reported", "Unknown"),            # → NA
+                 pack_tol = 0.01,                              # GDC vs .sav pack-years 허용 차이 (넘으면 20 중단)
+                 pack_known_diff = character()),               # 확인 후 허용할 환자 ID
+  # 9번 GEO 외부 검증 (22): 점수 = 코호트(분석 종양) 안의 5개 유전자 log2 발현 z 평균, median 분할
+  #   06/13의 cfg$geo_datasets와 따로 둠 (stage 형식·중복 key 처리가 달라서 06/13에 넣으면 그쪽이 중단됨)
+  #   fields: 표준 이름 → 원본 key (여러 개면 앞에서부터 첫 비결측). 22가 원본 key를 먼저 출력
+  #   keep_sample_type: 이 값만 남김 / exclude_values: 필드 값이 일치하면 제외 / na_values: 데이터셋별 추가 결측 표기
+  #   stage: stage_map (원본 → 1–4) 또는 stage_tnm (T/N/M 필드 → AJCC 7판 병기; 모형에는 I–II vs III–IV만 사용)
+  #   derive_time: 사건이면 if_event 시간, 아니면 if_censored 시간 (GSE68465 RFS)
+  #   cox_covariates_drop: cox_vars 중 없는 변수 (기록됨) / cox_covariates_add: 대신 넣을 변수
+  geo = list(
+    GSE31210 = list(
+      platform = "GPL570", symbol_col = "Gene Symbol", validates = "LUAD",
+      label = "GSE31210 (lung adenocarcinoma, stage I–II)",
+      fields = list(sample_type = "tissue", age = c("age (years)", "age"), gender = "gender",
+                    stage = "pathological stage",
+                    os_time = "days before death/censor", os_event = "death",
+                    rfs_time = "days before relapse/censor", rfs_event = "relapse",
+                    prognosis_exclude = "exclude for prognosis analysis due to incomplete resection or adjuvant therapy"),
+      keep_sample_type = "primary lung tumor",                 # normal lung 20개 제외
+      exclude_values = list(prognosis_exclude = "exclude"),    # 제출자 표시: 불완전 절제/보조요법 → 예후 분석 제외 (22명)
+      stage_map = c(IA = "1", IB = "1", II = "2"),
+      endpoints = list(
+        OS  = list(time = "os_time",  event = "os_event",  time_unit = "days", event_value = "dead",     label = "Overall survival"),
+        RFS = list(time = "rfs_time", event = "rfs_event", time_unit = "days", event_value = "relapsed", label = "Relapse-free survival")),
+      cox_covariates_drop = c("number_pack_years_smoked", "pathologic_stage_12_34"),   # pack-years 없음; 전원 I–II
+      cox_covariates_add  = c("pathologic_stage")),                                    # 대신 stage I vs II
+    GSE68465 = list(
+      platform = "GPL96", symbol_col = "Gene Symbol", validates = "LUAD",
+      label = "GSE68465 (lung adenocarcinoma, Director's Challenge)",
+      fields = list(sample_type = "disease_state", age = "age", gender = "Sex", tnm = "disease_stage",
+                    os_time = "months_to_last_contact_or_death", os_event = "vital_status",
+                    rfs_event = "first_progression_or_relapse", rfs_time_event = "months_to_first_progression",
+                    rfs_time_censor = "mths_to_last_clinical_assessment"),
+      keep_sample_type = "Lung Adenocarcinoma",                # Normal 19개 제외
+      na_values = c("--", "Unknown", "pp"),
+      stage_tnm = list(t = "tnm", n = "tnm", m = NULL, assume_m0 = TRUE),   # "pN0pT1" 형식, M 없음 (절제 코호트 → M0 가정)
+      derive_time = list(rfs_time = list(event = "rfs_event", event_value = "Yes",
+                                         if_event = "rfs_time_event", if_censored = "rfs_time_censor")),
+      endpoints = list(
+        OS  = list(time = "os_time",  event = "os_event",  time_unit = "months", event_value = "Dead", label = "Overall survival"),
+        RFS = list(time = "rfs_time", event = "rfs_event", time_unit = "months", event_value = "Yes",  label = "Relapse-free survival")),
+      cox_covariates_drop = c("number_pack_years_smoked")),
+    GSE30219 = list(
+      platform = "GPL570", symbol_col = "Gene Symbol", validates = "LUSC",
+      label = "GSE30219 (squamous cell carcinoma subset)",
+      fields = list(sample_type = "histology", age = "age at surgery", gender = "gender",
+                    t = "pt stage", n = "pn stage", m = "pm stage",
+                    os_time = "follow-up time (months)", os_event = "status",
+                    rfs_time = "disease free survival in months", rfs_event = "relapse (event=1; no event=0)"),
+      keep_sample_type = "SQC",                                # 이 데이터셋의 SCC = 소세포암 → 제외
+      value_map = list(gender = c(F = "Female", M = "Male")),
+      stage_tnm = list(t = "t", n = "n", m = "m", assume_m0 = FALSE),
+      endpoints = list(
+        OS  = list(time = "os_time",  event = "os_event",  time_unit = "months", event_value = "DEAD", label = "Overall survival"),
+        RFS = list(time = "rfs_time", event = "rfs_event", time_unit = "months", event_value = "1",    label = "Relapse-free survival")),
+      cox_covariates_drop = c("number_pack_years_smoked"))
+  )
+)
 
 # ---- 실행 파일 (run_gene.R) ---------------------------------------------------
 cfg$rscript <- "C:/Program Files/R/R-4.6.1/bin/Rscript.exe"

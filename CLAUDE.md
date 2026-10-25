@@ -22,6 +22,9 @@ R 4.6.1 is not on PATH. Use `"C:/Program Files/R/R-4.6.1/bin/Rscript.exe" <scrip
 11_sig_scores.R [SIG ...] [C ...]   # signature track (separate from genes): z/PC1/ssGSEA/singscore per cancer → data/processed/<C>_sigscores_<SIG>.csv + QC under signature/<SIG>/ (cfg$signatures)
 12_sig_survival.R [SIG ...] [C ...] # OS per score method (KM/RMST on median split, Cox per 1 SD, EPV, strata(tss), PH); primary = cfg$signature_primary_method; reads 11's score files + _clinical(_all).rds
 13_sig_geo.R [GSE ...] [SIG ...]    # GEO: all-gene probe collapse (geo_probe_rule) → scores within cohort → OS/RFS × all/pMMR, 06's MMR models; HR direction vs 12 (needs 12 for the comparison)
+20_paper_prep.R [C ...] [--refresh-gdc]   # paper track (lung): score check, GDC smoking (cached), ESTIMATE purity → data/processed/<C>_paper.rds (cfg$paper)
+21_paper_analysis.R [C ...]          # items 1–8, 10 per score (z_sav main, ssgsea) → output/*/<C>/paper/
+22_paper_geo.R [GSE ...]             # item 9: GEO validation (cfg$paper$geo, separate from 06/13) → output/*/GEO/paper/
 90_export.R [GENE] [--dry-run]   # copy one gene's 03–06 outputs to cfg$export$dest_root + <G>_tables.docx, <G>_key_results.csv, _export_manifest.csv
 run_gene.R <GENE> [--skip-download] [--from=<step>]   # csv_download.py → 02b → 03 → 04 → 05 ×cancers → 06 → 90, with MEDIN_GENE=<GENE>
 ```
@@ -31,6 +34,7 @@ run_gene.R <GENE> [--skip-download] [--from=<step>]   # csv_download.py → 02b 
 - **90:** settings in `cfg$export` (docs/outputs.md "Export"). `use_custom_filename = TRUE` + `custom_filename` renames the destination folder, generated files and the `{G}` position of copied file names (only there; results and content stay the real gene). Same-content files are skipped, changed ones moved to `_old/<timestamp>/` first; GEO is copied only if 06's `gene` column matches. The template `table양식.docx` is read only.
 - `07_timer` and `08_proteomics` are optional and not written yet.
 - **Signature track (11–13, `R/signature.R`):** never add signatures as fake genes to `merged.rds`; it must not affect `detect_genes()`, 04's BH set, 05, 90 or run_gene.R. Score files are the interface; settings in `cfg$signatures` / `cfg$signature_*` (docs/covariates.md, docs/methods.md). Needs GSVA, singscore (Bioconductor) and psych.
+- **Paper track (20–22, `R/paper.R`, `cfg$paper`):** reads merged.rds and 11's scores but writes only `<C>_paper.rds`, `<C>_gdc_clinical.csv`, `<C>_purity_estimate.csv` and `paper/` folders. Needs tidyestimate (CRAN) and network on the first 20 run (GDC clinical). Run 12 again after a .sav change before comparing 21's ssGSEA results with it.
 - **06:** the first run downloads the series matrix + GPL annotation into `cfg$geo_dir` (`data/geo`, git-ignored via `data/`) and caches `<GSE>_<GPL>_eset.rds`. Later runs take ~1 min. A GSE argument overrides `cfg$geo_datasets`.
 - **05:** run one cancer per process: `Rscript 05_gsea.R COAD`, then `Rscript 05_gsea.R READ`. A command-line argument overrides `cfg$cancers`. Keep `n_cores` at 2: each Windows SnowParam worker holds its own copy of the data. By default only `cfg$primary_gene` runs; `cfg$gsea_genes = "all"` runs every gene.
 - **There is no test suite.** Correctness comes from built-in stops: `validate_schema()` and `check_label_consistency()` in 01, the manifest check in 01, and the Status cross-check in 02b.

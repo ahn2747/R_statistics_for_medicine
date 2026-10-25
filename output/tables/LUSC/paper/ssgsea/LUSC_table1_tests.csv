@@ -1,0 +1,8 @@
+﻿"variable","label","test","p","n_tested","missing_total","missing_by_group","min_expected","any_expected_lt5","n_cells_expected_lt5"
+"age_g","Age group, years","Chi-square",0.05100071817277954,488,1,"Low 1; High 0",94.5,FALSE,0
+"gender","Sex","Chi-square",0.8361103317986592,488,1,"Low 1; High 0",63,FALSE,0
+"smoking","Smoking status","Chi-square",0.8194572250300864,477,12,"Low 6; High 6",8.981132075471699,FALSE,0
+"pathologic_stage","Pathologic stage","Fisher's exact",0.25913872432327245,484,5,"Low 2; High 3",3.4855371900826446,TRUE,2
+"pathologic_t","Pathologic T","Chi-square",0.6706686465802453,488,1,"Low 1; High 0",11.5,FALSE,0
+"pathologic_n","Pathologic N","Fisher's exact",0.32315382537900206,482,7,"Low 3; High 4",2.4896265560165975,TRUE,2
+"pathologic_m","Pathologic M","Fisher's exact",0.12177528306560574,408,81,"Low 41; High 40",3.5,TRUE,2

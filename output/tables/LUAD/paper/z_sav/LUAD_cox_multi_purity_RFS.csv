@@ -1,0 +1,11 @@
+﻿"Model","Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"Multivariable + tumor purity","Signature score group","Low (ref)",137,44,"Reference",,
+"","","High",137,52,"1.75 (1.11–2.76)","0.016",
+"","Age group, years","≤65 (ref)",131,42,"Reference",,
+"","","≥66",143,54,"1.67 (1.10–2.53)","0.016",
+"","Sex","Male (ref)",125,42,"Reference",,
+"","","Female",149,54,"1.03 (0.68–1.56)","0.900",
+"","Pack-years (per 10)","",274,96,"1.00 (0.92–1.08)","0.990",
+"","Pathologic stage group","I–II (ref)",220,73,"Reference",,
+"","","III–IV",54,23,"1.33 (0.83–2.15)","0.240",
+"","Tumor purity (per 10%)","",274,96,"1.22 (1.05–1.42)","0.011",

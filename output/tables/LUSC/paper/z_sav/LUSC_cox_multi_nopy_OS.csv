@@ -1,0 +1,9 @@
+﻿"Model","Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"Multivariable without Pack-years (per 10)","Signature score group","Low (ref)",242,92,"Reference",,
+"","","High",242,118,"1.61 (1.23–2.13)","<0.001",
+"","Age group, years","≤65 (ref)",187,71,"Reference",,
+"","","≥66",297,139,"1.28 (0.96–1.72)","0.090",
+"","Sex","Male (ref)",358,161,"Reference",,
+"","","Female",126,49,"0.80 (0.58–1.11)","0.177",
+"","Pathologic stage group","I–II (ref)",394,161,"Reference",,
+"","","III–IV",90,49,"1.60 (1.16–2.21)","0.004",

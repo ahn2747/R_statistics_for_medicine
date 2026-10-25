@@ -81,6 +81,13 @@
 
 - Stale handling: 11, 12 and 13 each move only their own families inside `signature/<SIG>/`; a full run (no SIG argument) moves folders of signatures no longer in `cfg$signatures` to `signature/_stale/`. The existing 03–06 stale functions list only their own folder level (non-recursive), so they never touch `signature/`. Keep it that way: never call `move_stale_dirs()`/`move_stale_outputs()` on a parent of `signature/` with a broad pattern.
 
+## 20–22 outputs (paper track, lung set; settings in `cfg$paper`)
+- **20:** `data/processed/<C>_paper.rds` (merged.rds + `score_<s>`/`group_<s>` per `cfg$paper$scores`, `smoking`, `smoking_raw`, `gdc_pack_years`, ESTIMATE `stromal_score`/`immune_score`/`estimate_score`/`purity`), `<C>_gdc_clinical.csv` (GDC clinical cache), `<C>_purity_estimate.csv`; `output/tables/<C>/paper/` `paper_QC`, `paper_QC_smoking`.
+- **21, score-independent** (`output/{tables,figures}/<C>/paper/`): `gsea_table6` (LUAD; re-print of `cfg$paper$gsea_file`), `km_candidates_<EP>[_raw]`, `km_genes_summary`, figures `km_<GENE>_<EP>`, `analysis_info_21`.
+- **21, per score** (`.../<C>/paper/<score>/`, score = `z_sav` (main), `ssgsea`): `cor_pearson[_long]`, `cor_spearman[_long]`, `shapiro`, `table1_signature`, `table1_tests`, `cox_<EP>_raw`, `cox_uni_<EP>`, `cox_multi_<EP>`, `cox_multi_nopy_<EP>`, `purity_cor`, `purity_partial_cor`, `cox_multi_purity_<EP>`, `cox_continuous_<EP>[_raw]`, `cutoff_summary_<EP>[_raw]`; figures `km_signature_<EP>`, `forest_<EP>`, `km_tertile_<EP>`, `km_quartile_<EP>`.
+- **22** (`output/{tables,figures}/GEO/paper/`, prefix `<GSE>_`): `paper_scores`, `paper_pheno_QC`, `paper_cox_<EP>[_raw]`, figures `paper_km_<EP>`, `paper_forest_<EP>`; prefix `GEO_`: `paper_summary[_raw]`, `analysis_info_22`. 06/13 outputs under `GEO/` are not touched.
+- No stale handling in 20–22: files are overwritten by name.
+
 ## Export to the student folder (`90_export.R`, settings in `cfg$export`)
 `Rscript 90_export.R [GENE] [--dry-run]` copies one gene's finished outputs (GENE defaults to `cfg$primary_gene`) into `<dest_root>/<folder_fmt % NAME>/`, e.g. `0.학생연구자료/MAD2L1(COAD&READ)/`. Shared helpers are in `R/export.R`.
 - **Export name** (`NAME`, `export_name()`): GENE by default. With `cfg$export$use_custom_filename = TRUE`, `cfg$export$custom_filename` (e.g. `"MYSIG"`) replaces the gene in every destination name: the folder (`MYSIG(COAD&READ)/`), the generated files (`MYSIG_tables.docx`, `MYSIG_key_results.csv`) and copied files whose layout pattern has `{G}` (`COAD_table1_MAD2L1.csv` → `COAD_table1_MYSIG.csv`, `COAD_km_MAD2L1.tiff` → `COAD_km_MYSIG.tiff`).

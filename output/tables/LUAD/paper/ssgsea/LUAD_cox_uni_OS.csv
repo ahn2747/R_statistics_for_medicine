@@ -1,0 +1,10 @@
+﻿"Model","Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"Univariable","Signature score (ssGSEA) group","Low (ref)",245,75,"Reference",,
+"","","High",245,102,"1.56 (1.15–2.10)","0.004",
+"","Age group, years","≤65 (ref)",236,82,"Reference",,
+"","","≥66",254,95,"1.17 (0.87–1.57)","0.302",
+"","Sex","Male (ref)",224,83,"Reference",,
+"","","Female",266,94,"0.92 (0.68–1.23)","0.565",
+"","Pack-years (per 10)","",333,116,"1.04 (0.97–1.11)","0.270",
+"","Pathologic stage group","I–II (ref)",379,116,"Reference",,
+"","","III–IV",103,59,"2.48 (1.81–3.40)","<0.001",

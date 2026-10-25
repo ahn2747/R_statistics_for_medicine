@@ -44,6 +44,24 @@ Every setting below lives in `config.R` (the no-hardcoding / audit-grep rule is 
 
 **Changing covariates:** edit only `config.R`, then rerun (see CLAUDE.md Conventions; the manifest guards patient counts). Confirm that the forest plots and `cox_multi_*` show the intended terms and reference rows. Changing `group_levels` also changes which group the HRs and log2FC are relative to.
 
+## Paper track (20–22, `cfg$paper`)
+Used only by 20–22; 03–06 and 11–13 never read it. Details in docs/methods.md "Paper track".
+
+| Key | Used in | Controls |
+|---|---|---|
+| `scores` | 20, 21 | Score definitions; first = main. `source = "sav"` (score/group columns, recomputed from `check_genes`) or `"sigscores"` (11's `method` column, median split) |
+| `endpoints` | 21 | OS/RFS time/event columns, `time_unit` (days → /30.44), `event_value` |
+| `cor_clinical`, `cor_genes`, `cor_sig_genes` | 21 | Correlation variables (items 1–2) |
+| `table1_vars` | 21 | Table 1 categorical variables (item 4) |
+| `cox_vars`, `covariate_scale`, `sens_drop`, `cox_endpoints` | 21, 22 | Item 5 covariates; scales are added to `cfg$covariate_scale` only inside 21/22 (04's settings unchanged) |
+| `candidate_genes`, `candidate_endpoints`, `candidate_alpha` | 21 | Item 6 |
+| `km_genes`, `km_endpoints` | 21 | Item 7 |
+| `purity` | 21 | Partial-correlation genes per cancer, endpoints of the + purity Cox |
+| `cutpoints`, `cutoff_endpoints` | 21 | Item 10 |
+| `gsea_file` | 21 | Item 3 source file per cancer (read only) |
+| `smoking` | 20 | GDC field names, text → level map, NA values, pack-years tolerance / allowlist |
+| `geo` | 22 | Item 9 datasets (fields, keep/exclude, stage map or TNM, derived times, endpoints, covariate drop/add) |
+
 ## Signature track (11–13)
 These settings are separate from the gene pipeline above (details in docs/methods.md "Signature scores").
 

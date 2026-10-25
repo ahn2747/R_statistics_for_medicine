@@ -1,0 +1,10 @@
+﻿"Model","Variable","Level","N","Events","HR (95% CI)","p","Overall p"
+"Univariable","Signature score (ssGSEA) (per 1 SD)","",490,177,"1.43 (1.23–1.66)","<0.001",
+"Multivariable","","",330,116,"1.46 (1.21–1.77)","<0.001",
+"","Age group, years","≤65 (ref)",158,53,"Reference",,
+"","","≥66",172,63,"1.36 (0.94–1.98)","0.104",
+"","Sex","Male (ref)",156,63,"Reference",,
+"","","Female",174,53,"0.70 (0.48–1.02)","0.061",
+"","Pack-years (per 10)","",330,116,"1.00 (0.93–1.07)","0.889",
+"","Pathologic stage group","I–II (ref)",257,77,"Reference",,
+"","","III–IV",73,39,"2.11 (1.43–3.11)","<0.001",
