@@ -37,7 +37,8 @@ ect2.rename(columns = {"Patient" : "sampleID"}, inplace = True)
 # pyreadstat.write_sav(merged_df, os.path.join(temp_genes_files_dir, "LUSC.sav"))
 
 a = df1
-df1[df1["sampleID"] == "TCGA-49-6742"]["OS.time"] = 1678
-df1[df1["sampleID"] == "TCGA-49-6742"]["OS"] = 0
-pyreadstat.write_sav(df1, os.path.join(temp_genes_files_dir, "LUAD_os_changed.sav"))
+a.loc[a["sampleID"] == "TCGA-49-6742", "OS.time"] = 1678
+a.loc[a["sampleID"] == "TCGA-49-6742", "OS"] = 0
+print(a.loc[a["sampleID"] == "TCGA-49-6742", "OS.time"])
+pyreadstat.write_sav(a, os.path.join(temp_genes_files_dir, "LUAD_os_changed.sav"))
 
